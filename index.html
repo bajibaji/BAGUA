@@ -13,7 +13,7 @@
 
         :root {
             --bg-color: #1a1a1a;
-            --container-bg: rgba(44, 44, 44, 0.85);
+            --container-bg: rgba(44, 44, 44, 0.15);
             --primary-text: #e0e0e0;
             --title-color: #d4af37;
             --border-color: #444;
@@ -314,7 +314,7 @@
 
     <div class="container" id="main-container">
         <div id="intro-section">
-            <h1>大衍筮法 在线卜卦</h1>
+            <h1>大衍筮法  在线占卜</h1>
             <div class="section">
                 <p>心诚则灵，一事一问</p>
             </div>
@@ -812,34 +812,66 @@
             }
         },
 
-        initParallax: function() {
-            const container = this.elements.mainContainer;
-            const sensitivity = 25;
-            if (this.state.isMobile) {
-                window.addEventListener('deviceorientation', (e) => {
-                    const { beta, gamma } = e;
-                    if (beta === null || gamma === null) return;
-                    if (!this.state.isCalibrated) {
-                        this.state.baseBeta = beta;
-                        this.state.baseGamma = gamma;
-                        this.state.isCalibrated = true;
-                    }
-                    const deltaBeta = beta - this.state.baseBeta;
-                    const deltaGamma = gamma - this.state.baseGamma;
-                    const yOffset = gsap.utils.clamp(-45, 45, deltaBeta) / 45; 
-                    const xOffset = gsap.utils.clamp(-45, 45, deltaGamma) / 45;
-                    gsap.to(container, { duration: 0.5, rotationY: xOffset * sensitivity, rotationX: -yOffset * sensitivity, ease: "power1.out" });
-                });
-            } else {
-                window.addEventListener('mousemove', (e) => {
-                    const { clientX, clientY } = e;
-                    const { innerWidth, innerHeight } = window;
-                    const xOffset = (clientX / innerWidth - 0.5) * 2;
-                    const yOffset = (clientY / innerHeight - 0.5) * 2;
-                    gsap.to(container, { duration: 0.8, rotationY: xOffset * 7, rotationX: -yOffset * 7, ease: "power1.out" });
-                });
+initParallax: function() {
+    const container = this.elements.mainContainer;
+
+    if (this.state.isMobile) {
+        // 优化点 1: 使用 GSAP 的 quickSetter，这是专门为高频更新优化的方法
+        const rotX = gsap.quickSetter(container, "rotationX", "deg");
+        const rotY = gsap.quickSetter(container, "rotationY", "deg");
+
+        let target = { x: 0, y: 0 }; // 目标旋转角度
+        let current = { x: 0, y: 0 }; // 当前旋转角度
+        const smoothing = 0.08; // 缓动系数，值越小越平滑但延迟越高
+
+        window.addEventListener('deviceorientation', (e) => {
+            const { beta, gamma } = e;
+            if (beta === null || gamma === null) return;
+
+            if (!this.state.isCalibrated) {
+                this.state.baseBeta = beta;
+                this.state.baseGamma = gamma;
+                this.state.isCalibrated = true;
             }
-        },
+            const deltaBeta = beta - this.state.baseBeta;
+            const deltaGamma = gamma - this.state.baseGamma;
+
+            // 限制最大偏移角度
+            const clampedGamma = gsap.utils.clamp(-45, 45, deltaGamma);
+            const clampedBeta = gsap.utils.clamp(-45, 45, deltaBeta);
+
+            // 优化点 2: 不直接设置最终值，而是设置一个“目标值”
+            target.y = clampedGamma * 0.4; // 调整灵敏度
+            target.x = -clampedBeta * 0.4;
+        });
+
+        // 优化点 3: 使用 GSAP 的 ticker (基于 requestAnimationFrame) 来创建平滑的动画循环
+        gsap.ticker.add(() => {
+            // 使用线性插值 (lerp) 来平滑地更新当前值，使其追赶目标值
+            current.x += (target.x - current.x) * smoothing;
+            current.y += (target.y - current.y) * smoothing;
+
+            // 使用 quickSetter 更新实际的 CSS transform
+            rotX(current.x);
+            rotY(current.y);
+        });
+
+    } else {
+        // 桌面端的鼠标移动效果保持不变
+        window.addEventListener('mousemove', (e) => {
+            const { clientX, clientY } = e;
+            const { innerWidth, innerHeight } = window;
+            const xOffset = (clientX / innerWidth - 0.5) * 2;
+            const yOffset = (clientY / innerHeight - 0.5) * 2;
+            gsap.to(container, { 
+                duration: 1.2, // 延长持续时间使效果更柔和
+                rotationY: xOffset * 8, 
+                rotationX: -yOffset * 8, 
+                ease: "power1.out" 
+            });
+        });
+    }
+},
 
         addGlowEffect: function(button) {
             const glow = document.createElement('div');
