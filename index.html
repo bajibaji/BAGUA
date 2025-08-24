@@ -183,8 +183,8 @@
         
         #interactive-animation-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); 
-            /* backdrop-filter: blur(2px); -- Removed for performance */
+            /* MODIFICATION: Increased opacity for a less transparent background */
+            background: rgba(0,0,0,0.85); 
             z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
@@ -207,7 +207,9 @@
         }
 
         #yao-stats-container {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
+            position: absolute; 
+            bottom: 30px; 
+            left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
             background: rgba(0,0,0,0.5); border-radius: 8px; padding: 10px; border: 1px solid var(--border-color);
             display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0;
             transition: opacity 0.5s ease; color: var(--primary-text);
@@ -235,7 +237,8 @@
         
         #interpretation-modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+            background: rgba(0,0,0,0.5); 
+            backdrop-filter: blur(5px);
             z-index: 200; display: flex; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
@@ -262,6 +265,29 @@
         .tab-content.active { display: block; animation: contentFadeIn 0.5s ease; }
         @keyframes contentFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+        /* MODIFICATION: Styles for the new final yao animation */
+        #final-yao-animation-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 999; /* Highest z-index */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; /* Make it non-interactive */
+            opacity: 0;
+            background: rgba(0,0,0,0.7);
+        }
+        #final-yao-lines {
+            display: flex;
+            flex-direction: column-reverse; /* Important for correct order */
+        }
+        #final-yao-lines .yao {
+            width: 200px; /* Larger for emphasis */
+            height: 35px;
+            margin: 12px 0;
+        }
+
         @media (max-width: 768px) {
             body { align-items: center; padding: 0; }
             .container { padding: 15px; margin: 0 2.5%; width: 95%; border-radius: 8px; overflow: auto; }
@@ -273,10 +299,19 @@
             .yao { width: 100%; max-width: 80px; height: 14px; margin: 3px auto; }
             .yao svg { height: 3px; }
             .yao-changing-symbol { font-size: 0.8em; right: -16px;}
-            #yao-stats-container { padding: 8px; gap: 5px; }
+            #yao-stats-container { 
+                padding: 8px; 
+                gap: 5px; 
+                bottom: 5vh;
+            }
             .change-stat { font-size: 0.7em; padding: 4px 6px; }
             .yao-stats-result { font-size: 1em; }
             button { font-size: 1em; padding: 10px 18px; }
+            #final-yao-lines .yao {
+                width: 150px;
+                height: 25px;
+                margin: 8px 0;
+            }
         }
     </style>
 </head>
@@ -365,6 +400,11 @@
         </div>
     </div>
 
+    <!-- MODIFICATION: New container for the final yao animation -->
+    <div id="final-yao-animation-overlay">
+        <div id="final-yao-lines"></div>
+    </div>
+
     <div id="interpretation-modal-overlay">
         <div id="interpretation-modal">
             <div id="modal-header">
@@ -389,8 +429,8 @@
             divineButton: document.getElementById('divine-button'),
             interactiveContainer: document.getElementById('interactive-animation-container'),
             interactionPrompt: document.getElementById('interaction-prompt'),
-            canvasWrapper: document.getElementById('canvas-wrapper'), // New
-            canvas: document.getElementById('stalk-canvas'), // New
+            canvasWrapper: document.getElementById('canvas-wrapper'),
+            canvas: document.getElementById('stalk-canvas'),
             resultContainer: document.getElementById('result-container'),
             originalHexagram: document.getElementById('original-hexagram'),
             changedHexagram: document.getElementById('changed-hexagram'),
@@ -407,6 +447,9 @@
             yaoStatsResult: document.getElementById('yao-stats-result'),
             resultActionsWrapper: document.getElementById('result-actions-wrapper'),
             interpretationModalOverlay: document.getElementById('interpretation-modal-overlay'),
+            // MODIFICATION: Added new elements for animation
+            finalYaoAnimationOverlay: document.getElementById('final-yao-animation-overlay'),
+            finalYaoLines: document.getElementById('final-yao-lines'),
         },
         
         state: {
@@ -418,9 +461,9 @@
             baseGamma: 0,
             currentOriginalHexKey: null,
             currentChangedHexKey: null,
-            canvasContext: null, // New
-            stalks: [], // New
-            animationRunning: false, // New
+            canvasContext: null,
+            stalks: [],
+            animationRunning: false,
         },
 
         // --- Canvas Animation Logic ---
@@ -433,7 +476,6 @@
             this.state.canvasContext.scale(dpr, dpr);
         },
 
-        // Stalk object for canvas rendering
         createStalk: function(x, y, rotation, width, height) {
             return { x, y, rotation, width, height, alpha: 1, scale: 1 };
         },
@@ -490,7 +532,6 @@
             return new Promise(resolve => {
                 this.elements.interactionPrompt.textContent = `第 ${changeName} 变，请点击分蓍草`;
                 
-                // Initialize stalks for canvas
                 this.state.stalks = [];
                 const canvasRect = this.elements.canvas.getBoundingClientRect();
                 const stalkWidth = 2;
@@ -501,7 +542,6 @@
                     this.state.stalks.push(stalk);
                 }
 
-                // Animate stalks into initial position
                 gsap.fromTo(this.state.stalks, 
                     { x: canvasRect.width / 2, y: canvasRect.height / 2 - stalkHeight / 2, rotation: 0 }, 
                     { 
@@ -545,11 +585,34 @@
                     tl.to(rightRemainderStalks, { x: '+=30', scale: 1.2, duration: 0.3, ease: 'power2.out' }, '<');
                     
                     const allRemainders = [heldStalk, ...leftRemainderStalks, ...rightRemainderStalks];
+                    const canvas = this.elements.canvas;
+                    const dpr = window.devicePixelRatio || 1;
+                    const centerX = canvas.width / dpr / 2;
+                    const centerY = canvas.height / dpr / 2;
+
+                    tl.to(allRemainders, {
+                        x: centerX,
+                        y: centerY - 40,
+                        rotation: () => (Math.random() - 0.5) * 30,
+                        duration: 0.5,
+                        ease: 'power2.out',
+                        stagger: 0.02
+                    }, "+=0.3");
                     
-                    tl.to(allRemainders, { y: `+=${window.innerHeight / 2 + 100}`, alpha: 0, duration: 0.6, stagger: 0.03, ease: 'power2.in' }, "+=0.3");
+                    // This animation correctly moves stalks to the bottom of the entire screen.
+                    tl.to(allRemainders, {
+                        y: window.innerHeight + 100, 
+                        alpha: 0,
+                        duration: 0.8,
+                        ease: 'power1.in',
+                        stagger: {
+                            amount: 0.25,
+                            from: 'center'
+                        }
+                    });
                     
                     const remainingStalks = this.state.stalks.filter(s => !allRemainders.includes(s));
-                    tl.to(remainingStalks, { x: canvasRect.width / 2, rotation: 0, alpha: 1, duration: 0.4, ease: 'power2.inOut' }, '-=0.5');
+                    tl.to(remainingStalks, { x: centerX, rotation: 0, alpha: 1, duration: 0.4, ease: 'power2.inOut' }, '-=0.5');
                 };
                 this.elements.canvasWrapper.addEventListener('click', clickHandler);
                 this.elements.canvasWrapper.style.cursor = 'pointer';
@@ -588,7 +651,6 @@
         animateFinalHexagramFormation: async function() {
             const tl = gsap.timeline();
             tl.to(this.elements.yaoStatsContainer, { opacity: 0, duration: 0.3 });
-            // Animate remaining stalks to disappear
             tl.to(this.state.stalks, { 
                 alpha: 0, 
                 scale: 0, 
@@ -640,6 +702,39 @@
             return originalYaoValues;
         },
 
+        // MODIFICATION: New function for the final animation
+        showFinalYaoAnimation: function(yaoValues) {
+            return new Promise(resolve => {
+                const overlay = this.elements.finalYaoAnimationOverlay;
+                const linesContainer = this.elements.finalYaoLines;
+                linesContainer.innerHTML = ''; // Clear previous lines
+
+                yaoValues.forEach(value => {
+                    const yaoInfo = this.getYaoInfo(value);
+                    // Don't show changing symbols for this transitional animation
+                    const displayInfo = { ...yaoInfo, isChanging: false, symbol: '' };
+                    linesContainer.appendChild(this.createYaoElement(displayInfo));
+                });
+
+                const tl = gsap.timeline({ onComplete: resolve });
+
+                tl.to(overlay, { opacity: 1, duration: 0.3 })
+                  .from(linesContainer.children, {
+                      opacity: 0,
+                      scale: 0.5,
+                      stagger: 0.1,
+                      duration: 0.5,
+                      ease: 'back.out(1.7)'
+                  })
+                  .to(overlay, {
+                      opacity: 0,
+                      scale: 0,
+                      duration: 0.6,
+                      ease: 'power2.in'
+                  }, "+=1.2"); // Pause for 1.2 seconds
+            });
+        },
+
         startDivination: async function() {
             if (this.state.isMobile && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try { await DeviceOrientationEvent.requestPermission(); } catch (error) { console.error('陀螺仪权限请求失败:', error); }
@@ -651,12 +746,17 @@
             this.elements.changedHexagram.innerHTML = '';
             gsap.to(this.elements.mainContainer, { opacity: 0, duration: 0.5 });
             document.body.classList.add('divining');
+            
             let originalYaoValues;
             if (this.state.divinationMethod === 'yarrow') {
                 originalYaoValues = await this.runYarrowDivination();
             } else {
                 originalYaoValues = await this.runRandomDivination();
             }
+
+            // MODIFICATION: Call the new animation before showing results
+            await this.showFinalYaoAnimation(originalYaoValues);
+
             document.body.classList.remove('divining');
             this.displayHexagrams(originalYaoValues);
             this.displayInterpretations(originalYaoValues);
