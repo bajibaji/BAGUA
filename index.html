@@ -183,7 +183,6 @@
         
         #interactive-animation-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            /* MODIFICATION: Increased opacity for a less transparent background */
             background: rgba(0,0,0,0.85); 
             z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -265,25 +264,24 @@
         .tab-content.active { display: block; animation: contentFadeIn 0.5s ease; }
         @keyframes contentFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* MODIFICATION: Styles for the new final yao animation */
         #final-yao-animation-overlay {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            z-index: 999; /* Highest z-index */
+            z-index: 999;
             display: flex;
             justify-content: center;
             align-items: center;
-            pointer-events: none; /* Make it non-interactive */
+            pointer-events: none;
             opacity: 0;
             background: rgba(0,0,0,0.7);
         }
         #final-yao-lines {
             display: flex;
-            flex-direction: column-reverse; /* Important for correct order */
+            flex-direction: column-reverse;
         }
         #final-yao-lines .yao {
-            width: 200px; /* Larger for emphasis */
+            width: 200px;
             height: 35px;
             margin: 12px 0;
         }
@@ -296,7 +294,7 @@
             .hexagram { flex: 1; min-width: 0; padding: 0 5px; }
             .hexagram h3 { font-size: 1em; margin-bottom: 6px; }
             .hexagram-name { font-size: 1.1em; margin-top: 6px; word-break: break-all; }
-            .yao { width: 100%; max-width: 80px; height: 14px; margin: 3px auto; }
+            .yao { width: 100%; max-width: 160px; height: 14px; margin: 3px auto; }
             .yao svg { height: 3px; }
             .yao-changing-symbol { font-size: 0.8em; right: -16px;}
             #yao-stats-container { 
@@ -400,7 +398,6 @@
         </div>
     </div>
 
-    <!-- MODIFICATION: New container for the final yao animation -->
     <div id="final-yao-animation-overlay">
         <div id="final-yao-lines"></div>
     </div>
@@ -447,7 +444,6 @@
             yaoStatsResult: document.getElementById('yao-stats-result'),
             resultActionsWrapper: document.getElementById('result-actions-wrapper'),
             interpretationModalOverlay: document.getElementById('interpretation-modal-overlay'),
-            // MODIFICATION: Added new elements for animation
             finalYaoAnimationOverlay: document.getElementById('final-yao-animation-overlay'),
             finalYaoLines: document.getElementById('final-yao-lines'),
         },
@@ -702,16 +698,18 @@
             return originalYaoValues;
         },
 
-        // MODIFICATION: New function for the final animation
         showFinalYaoAnimation: function(yaoValues) {
             return new Promise(resolve => {
                 const overlay = this.elements.finalYaoAnimationOverlay;
                 const linesContainer = this.elements.finalYaoLines;
-                linesContainer.innerHTML = ''; // Clear previous lines
+                linesContainer.innerHTML = ''; 
+
+                // Reset styles before animation
+                gsap.set(overlay, { opacity: 0 });
+                gsap.set(linesContainer, { scale: 1, opacity: 1 });
 
                 yaoValues.forEach(value => {
                     const yaoInfo = this.getYaoInfo(value);
-                    // Don't show changing symbols for this transitional animation
                     const displayInfo = { ...yaoInfo, isChanging: false, symbol: '' };
                     linesContainer.appendChild(this.createYaoElement(displayInfo));
                 });
@@ -726,12 +724,17 @@
                       duration: 0.5,
                       ease: 'back.out(1.7)'
                   })
-                  .to(overlay, {
-                      opacity: 0,
+                  .to(linesContainer, {
                       scale: 0,
+                      opacity: 0,
                       duration: 0.6,
                       ease: 'power2.in'
-                  }, "+=1.2"); // Pause for 1.2 seconds
+                  }, "+=1.2")
+                  .to(overlay, {
+                      opacity: 0,
+                      duration: 0.6,
+                      ease: 'power2.in'
+                  }, "<"); 
             });
         },
 
@@ -754,7 +757,6 @@
                 originalYaoValues = await this.runRandomDivination();
             }
 
-            // MODIFICATION: Call the new animation before showing results
             await this.showFinalYaoAnimation(originalYaoValues);
 
             document.body.classList.remove('divining');
@@ -782,6 +784,7 @@
             resetButton.textContent = '再算一卦';
             resetButton.addEventListener('click', (e) => {
                 this.addGlowEffect(e.currentTarget);
+                // MODIFICATION: Reverted to correctly reset the UI to the main screen
                 this.elements.resultContainer.style.display = 'none';
                 this.elements.introSection.style.display = 'block';
                 this.elements.divineButton.parentElement.style.display = 'flex';
@@ -1009,4 +1012,4 @@
     };
     </script>
 </body>
-</html>
+</ht
