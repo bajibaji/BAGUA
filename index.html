@@ -197,7 +197,7 @@
             position: relative;
         }
         #stalk-canvas {
-            position: fixed; /* MODIFICATION: Changed to fixed for viewport positioning */
+            position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
@@ -582,12 +582,11 @@
         },
         
         // 获取用户交互以完成一次“变”，并播放动画
-        getChangeFromUser: function(totalSticks, changeName) {
+        getChangeFromUser: function(totalSticks, changeName, boxRect) {
             return new Promise(resolve => {
                 this.elements.interactionPrompt.textContent = `第 ${changeName} 变，请点击分蓍草`;
                 
                 this.state.stalks = [];
-                const boxRect = this.elements.canvasWrapper.getBoundingClientRect();
                 const stalkWidth = 2;
                 const stalkHeight = 100;
 
@@ -677,7 +676,7 @@
         },
 
         // 通过三次“变”来生成一个爻
-        generateYaoInteractively: async function() {
+        generateYaoInteractively: async function(boxRect) {
             let sticks = 49;
             const changes = [];
             
@@ -688,7 +687,7 @@
 
             for (let i = 0; i < 3; i++) {
                 const changeNames = ['一', '二', '三'];
-                const changeResult = await this.getChangeFromUser(sticks, changeNames[i]);
+                const changeResult = await this.getChangeFromUser(sticks, changeNames[i], boxRect);
                 sticks = changeResult.remaining;
                 changes.push(changeResult);
 
@@ -728,16 +727,19 @@
             this.setupCanvas();
             this.startAnimationLoop();
             this.elements.interactiveContainer.classList.add('visible');
-            // MODIFICATION: Wait for the container's fade-in animation to complete before calculating positions.
-            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 50))); 
+
+            const boxRect = this.elements.canvasWrapper.getBoundingClientRect();
+
             this.elements.yaoStatsContainer.style.opacity = 0;
             this.state.divinationData = [];
             const originalYaoValues = [];
             const yaoNames = ['初', '二', '三', '四', '五', '上'];
             for (let i = 0; i < 6; i++) {
                 this.elements.interactionPrompt.textContent = `求 ${yaoNames[i]} 爻`;
-                await new Promise(r => setTimeout(r, 150)); // Keep for pacing between yaos
-                const yaoResult = await this.generateYaoInteractively();
+                await new Promise(r => setTimeout(r, 150));
+                const yaoResult = await this.generateYaoInteractively(boxRect); 
                 originalYaoValues.push(yaoResult.value);
                 this.state.divinationData.push(yaoResult);
             }
@@ -1096,7 +1098,7 @@
             document.body.innerHTML = '<div style="color: white; text-align: center; padding-top: 50px; font-size: 1.2em;">无法加载数据文件 (data.js)，请检查文件路径是否正确并刷新页面。</div>';
         }
         // 调整全局动画速率，优化性能和观感
-        gsap.globalTimeline.timeScale(2.5);
+        gsap.globalTimeline.timeScale(2.2);
     };
     </script>
 </body>
