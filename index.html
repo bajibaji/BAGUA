@@ -610,9 +610,8 @@
                     this.elements.canvasWrapper.removeEventListener('click', clickHandler);
                     this.elements.canvasWrapper.style.cursor = 'default';
                     
-                    const rect = this.elements.canvasWrapper.getBoundingClientRect();
-                    const clickX = e.clientX - rect.left;
-                    const clickRatio = clickX / rect.width;
+                    const clickX = e.clientX - boxRect.left;
+                    const clickRatio = clickX / boxRect.width;
                     const changeResult = this.performChangeWithInteraction(totalSticks, clickRatio);
                     
                     this.elements.interactionPrompt.textContent = `天: ${changeResult.left}, 地: ${changeResult.right}`;
