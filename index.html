@@ -15,7 +15,7 @@
 
         :root {
             --bg-color: #1a1a1a;
-            --container-bg: rgba(44, 44, 44, 0.15); /* 背景透明度调低 */
+            --container-bg: rgba(44, 44, 44, 0.15);
             --primary-text: #e0e0e0;
             --title-color: #d4af37;
             --border-color: #444;
@@ -191,7 +191,6 @@
         #interactive-animation-container.visible { opacity: 1; pointer-events: all; }
         #interaction-prompt { color: var(--title-color); font-size: 1.5em; margin-bottom: 20px; text-shadow: 0 0 10px var(--glow-color); min-height: 1.5em;}
         
-        /* --- Canvas Container --- */
         #canvas-wrapper {
             width: 80%; max-width: 500px; height: 150px;
             cursor: pointer; border: 2px dashed var(--border-color); border-radius: 10px;
@@ -294,7 +293,8 @@
             .hexagram { flex: 1; min-width: 0; padding: 0 5px; }
             .hexagram h3 { font-size: 1em; margin-bottom: 6px; }
             .hexagram-name { font-size: 1.1em; margin-top: 6px; word-break: break-all; }
-            .yao { width: 100%; max-width: 160px; height: 14px; margin: 3px auto; }
+            /* 再次加长移动端爻的长度 */
+            .yao { width: 100%; max-width: 200px; height: 14px; margin: 3px auto; }
             .yao svg { height: 3px; }
             .yao-changing-symbol { font-size: 0.8em; right: -16px;}
             #yao-stats-container { 
@@ -387,7 +387,6 @@
     
     <div id="interactive-animation-container">
         <div id="interaction-prompt"></div>
-        <!-- Canvas replaces the old DOM-based stalk wrapper -->
         <div id="canvas-wrapper">
             <canvas id="stalk-canvas"></canvas>
         </div>
@@ -419,9 +418,10 @@
     </div>
 
     <script>
-    // Note: HEXAGRAM_DATA is now loaded from data.js
+    // 注意: 卦象数据 HEXAGRAM_DATA 现在从 data.js 文件加载
     
     const app = {
+        // 集中管理所有DOM元素的引用
         elements: {
             divineButton: document.getElementById('divine-button'),
             interactiveContainer: document.getElementById('interactive-animation-container'),
@@ -448,21 +448,24 @@
             finalYaoLines: document.getElementById('final-yao-lines'),
         },
         
+        // 存储应用的状态
         state: {
             divinationData: [],
             isMobile: /Mobi|Android/i.test(navigator.userAgent),
-            divinationMethod: 'yarrow',
-            isCalibrated: false,
+            divinationMethod: 'yarrow', // 默认为大衍筮法
+            isCalibrated: false, // 用于陀螺仪校准
             baseBeta: 0,
             baseGamma: 0,
             currentOriginalHexKey: null,
             currentChangedHexKey: null,
             canvasContext: null,
-            stalks: [],
-            animationRunning: false,
+            stalks: [], // 存储所有蓍草对象
+            animationRunning: false, // 动画循环是否在运行
         },
 
-        // --- Canvas Animation Logic ---
+        // --- Canvas 动画逻辑 ---
+
+        // 初始化Canvas，设置高DPI显示
         setupCanvas: function() {
             this.state.canvasContext = this.elements.canvas.getContext('2d');
             const dpr = window.devicePixelRatio || 1;
@@ -472,10 +475,12 @@
             this.state.canvasContext.scale(dpr, dpr);
         },
 
+        // 创建一个蓍草对象，用于Canvas渲染
         createStalk: function(x, y, rotation, width, height) {
             return { x, y, rotation, width, height, alpha: 1, scale: 1 };
         },
 
+        // 绘制所有蓍草到Canvas上
         drawStalks: function() {
             if (!this.state.animationRunning) return;
             
@@ -497,17 +502,21 @@
             });
         },
 
+        // 启动GSAP的ticker来持续调用绘制函数，形成动画
         startAnimationLoop: function() {
             this.state.animationRunning = true;
             gsap.ticker.add(this.drawStalks.bind(this));
         },
 
+        // 停止动画循环
         stopAnimationLoop: function() {
             this.state.animationRunning = false;
             gsap.ticker.remove(this.drawStalks.bind(this));
         },
-        // --- End Canvas Logic ---
+        
+        // --- 核心算法与交互 ---
 
+        // 根据用户点击位置，执行一次“变”的操作
         performChangeWithInteraction: function(totalSticks, clickRatio) {
             if (totalSticks <= 1) return { total: totalSticks, left: totalSticks, right: 0, leftRem: totalSticks, rightRem: 0, removed: 0, remaining: totalSticks };
             let leftPile = Math.round(totalSticks * clickRatio);
@@ -524,6 +533,7 @@
             return { total: totalSticks, left: leftPile, right: rightPile, leftRem: leftRemainder, rightRem: rightRemainder, removed: totalRemoved, remaining: remainingSticks };
         },
         
+        // 获取用户交互以完成一次“变”，并播放动画
         getChangeFromUser: function(totalSticks, changeName) {
             return new Promise(resolve => {
                 this.elements.interactionPrompt.textContent = `第 ${changeName} 变，请点击分蓍草`;
@@ -595,7 +605,7 @@
                         stagger: 0.02
                     }, "+=0.3");
                     
-                    // This animation correctly moves stalks to the bottom of the entire screen.
+                    // 动画：将多余的蓍草移动到屏幕可视范围之外
                     tl.to(allRemainders, {
                         y: window.innerHeight + 100, 
                         alpha: 0,
@@ -615,6 +625,7 @@
             });
         },
 
+        // 通过三次“变”来生成一个爻
         generateYaoInteractively: async function() {
             let sticks = 49;
             const changes = [];
@@ -644,6 +655,7 @@
             return { value: yaoValue, changes: changes, info: yaoInfo };
         },
 
+        // 最后一个爻生成后的收尾动画
         animateFinalHexagramFormation: async function() {
             const tl = gsap.timeline();
             tl.to(this.elements.yaoStatsContainer, { opacity: 0, duration: 0.3 });
@@ -657,6 +669,9 @@
             await new Promise(resolve => tl.eventCallback('onComplete', resolve));
         },
 
+        // --- 卜卦流程控制 ---
+
+        // 执行完整的大衍筮法流程
         runYarrowDivination: async function() {
             this.setupCanvas();
             this.startAnimationLoop();
@@ -679,6 +694,7 @@
             return originalYaoValues;
         },
 
+        // 执行随机数法流程
         runRandomDivination: async function() {
             this.state.divinationData = [];
             const originalYaoValues = [];
@@ -698,13 +714,14 @@
             return originalYaoValues;
         },
 
+        // 显示最终六爻的过渡动画
         showFinalYaoAnimation: function(yaoValues) {
             return new Promise(resolve => {
                 const overlay = this.elements.finalYaoAnimationOverlay;
                 const linesContainer = this.elements.finalYaoLines;
                 linesContainer.innerHTML = ''; 
 
-                // Reset styles before animation
+                // 动画前重置样式，确保每次都能正确播放
                 gsap.set(overlay, { opacity: 0 });
                 gsap.set(linesContainer, { scale: 1, opacity: 1 });
 
@@ -724,6 +741,7 @@
                       duration: 0.5,
                       ease: 'back.out(1.7)'
                   })
+                  // 分别对爻和背景进行动画，避免边框问题
                   .to(linesContainer, {
                       scale: 0,
                       opacity: 0,
@@ -738,10 +756,13 @@
             });
         },
 
+        // 总的卜卦启动函数
         startDivination: async function() {
+            // 移动端请求陀螺仪权限
             if (this.state.isMobile && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try { await DeviceOrientationEvent.requestPermission(); } catch (error) { console.error('陀螺仪权限请求失败:', error); }
             }
+            // 更新UI状态为“推演中”
             this.elements.divineButton.disabled = true;
             this.elements.divineButton.innerHTML = '推演中...<span class="loader"></span>';
             this.elements.resultContainer.style.display = 'none';
@@ -751,14 +772,17 @@
             document.body.classList.add('divining');
             
             let originalYaoValues;
+            // 根据选择的方法执行不同的卜卦流程
             if (this.state.divinationMethod === 'yarrow') {
                 originalYaoValues = await this.runYarrowDivination();
             } else {
                 originalYaoValues = await this.runRandomDivination();
             }
 
+            // 播放六爻动画
             await this.showFinalYaoAnimation(originalYaoValues);
 
+            // 显示最终结果
             document.body.classList.remove('divining');
             this.displayHexagrams(originalYaoValues);
             this.displayInterpretations(originalYaoValues);
@@ -769,6 +793,9 @@
             this.setupResultActions();
         },
 
+        // --- UI 渲染与更新 ---
+
+        // 设置结果页面的按钮（卦象解释、再算一卦）
         setupResultActions: function() {
             this.elements.resultActionsWrapper.innerHTML = '';
             const interpButton = document.createElement('button');
@@ -784,7 +811,7 @@
             resetButton.textContent = '再算一卦';
             resetButton.addEventListener('click', (e) => {
                 this.addGlowEffect(e.currentTarget);
-                // MODIFICATION: Reverted to correctly reset the UI to the main screen
+                // 点击后重置UI到初始界面
                 this.elements.resultContainer.style.display = 'none';
                 this.elements.introSection.style.display = 'block';
                 this.elements.divineButton.parentElement.style.display = 'flex';
@@ -795,6 +822,7 @@
             this.elements.resultActionsWrapper.appendChild(resetButton);
         },
 
+        // 显示卦象解释的弹窗
         showInterpretationModal: function() {
             const { currentOriginalHexKey, currentChangedHexKey } = this.state;
             const originalData = HEXAGRAM_DATA[currentOriginalHexKey];
@@ -826,6 +854,7 @@
             this.elements.interpretationModalOverlay.classList.add('visible');
         },
 
+        // 根据数值（6,7,8,9）获取爻的信息
         getYaoInfo: function(value) {
              switch (value) {
                 case 6: return { type: 'yin', isChanging: true, binary: '0', symbol: '×' };
@@ -836,12 +865,14 @@
             }
         },
         
+        // 获取变爻对应的爻值
         getChangedYaoValue: function(value) {
             if (value === 6) return 7;
             if (value === 9) return 8;
             return value;
         },
 
+        // 创建单个爻的SVG DOM元素
         createYaoElement: function(info) {
             const yaoDiv = document.createElement('div');
             yaoDiv.className = `yao yao-${info.type}`;
@@ -876,6 +907,7 @@
             return yaoDiv;
         },
 
+        // 将生成的本卦和变卦渲染到页面
         displayHexagrams: function(originalYaoValues) {
             this.elements.originalHexagram.innerHTML = '';
             this.elements.changedHexagram.innerHTML = '';
@@ -887,6 +919,7 @@
             gsap.from(this.elements.changedHexagram.children, { opacity: 0, stagger: 0.1 });
         },
 
+        // 根据爻的二进制码查找并显示卦名和解释
         displayInterpretations: function(originalYaoValues) {
             const originalBinary = [...originalYaoValues].map(v => this.getYaoInfo(v).binary).reverse().join('');
             const changedBinary = [...originalYaoValues].map(v => this.getYaoInfo(this.getChangedYaoValue(v)).binary).reverse().join('');
@@ -908,6 +941,9 @@
             }
         },
 
+        // --- 初始化与辅助功能 ---
+
+        // 初始化视差效果（桌面端鼠标移动，移动端陀螺仪）
         initParallax: function() {
             const container = this.elements.mainContainer;
             if (this.state.isMobile) {
@@ -948,6 +984,7 @@
             }
         },
 
+        // 按钮点击发光特效
         addGlowEffect: function(button) {
             const glow = document.createElement('div');
             glow.className = 'button-glow-effect';
@@ -955,6 +992,7 @@
             setTimeout(() => glow.remove(), 600);
         },
 
+        // 初始化应用，绑定所有事件监听器
         init: function() {
             this.elements.methodToggle.addEventListener('change', (e) => {
                 this.state.divinationMethod = e.target.checked ? 'yarrow' : 'random';
@@ -999,17 +1037,16 @@
     };
 
     window.onload = () => {
-        // Check if HEXAGRAM_DATA is loaded before initializing the app
+        // 确保卦象数据加载完毕后再初始化应用
         if (typeof HEXAGRAM_DATA !== 'undefined') {
             app.init();
         } else {
             console.error('卦象数据 (HEXAGRAM_DATA) 未能从 data.js 加载。');
-            // Optionally, display an error message to the user
             document.body.innerHTML = '<div style="color: white; text-align: center; padding-top: 50px; font-size: 1.2em;">无法加载数据文件 (data.js)，请检查文件路径是否正确并刷新页面。</div>';
         }
-        // Adjusted timescale for smoother performance on mobile
-        gsap.globalTimeline.timeScale(2.0);
+        // 调整全局动画速率，优化性能和观感
+        gsap.globalTimeline.timeScale(1.8);
     };
     </script>
 </body>
-</ht
+</html>
