@@ -183,7 +183,7 @@
         
         #interactive-animation-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); 
+            background: rgba(0,0,0,0.85);
             z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
@@ -194,44 +194,41 @@
         #canvas-wrapper {
             width: 80%; max-width: 500px; height: 150px;
             cursor: pointer; border: 2px dashed var(--border-color); border-radius: 10px;
-            padding: 10px; position: relative;
+            position: relative;
         }
         #stalk-canvas {
-            position: absolute;
+            position: fixed; /* MODIFICATION: Changed to fixed for viewport positioning */
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none; 
         }
 
-        /* MODIFICATION START: Styles for collapsible stats panel */
         #yao-stats-container {
             position: fixed;
-            bottom: 50px; /* 面板底部与屏幕底部的距离 */
+            bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
             max-width: 400px;
             background: rgba(0, 0, 0, 0.75);
-            border-radius: 8px; /* 四个角都是圆角 */
-            border: 1px solid var(--border-color); /* 四周都有边框 */
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
             opacity: 0;
             color: var(--primary-text);
             cursor: pointer;
             transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-            overflow: hidden; /* 隐藏超出 max-height 的内容 */
+            overflow: hidden;
         }
 
         #yao-stats-container.collapsed {
-            /* 收起时，高度刚好容纳标题栏 */
-            max-height: 50px; /* 根据标题栏实际高度微调 */
+            max-height: 50px;
         }
 
         #yao-stats-container:not(.collapsed) {
-            /* 展开时，给一个足够大的高度 */
             max-height: 500px; 
         }
-        /* MODIFICATION END */
 
         .yao-stats-title { 
             padding: 12px;
@@ -245,7 +242,6 @@
             align-items: center;
             gap: 8px;
         }
-        /* Up/Down arrow indicator */
         .yao-stats-title::before {
             content: '▲';
             font-size: 0.8em;
@@ -262,7 +258,13 @@
             align-items: center;
             gap: 8px;
             width: 100%;
+            transition: opacity 0.2s ease;
         }
+        #yao-stats-container.collapsed .yao-stats-content {
+            opacity: 0;
+            pointer-events: none;
+        }
+
         .yao-stats-changes { display: flex; justify-content: center; gap: 10px; width: 100%; }
         .change-stat { background: rgba(255,255,255,0.1); padding: 5px 8px; border-radius: 4px; font-size: 0.8em; text-align: center; }
         .change-stat .label { font-size: 0.9em; opacity: 0.7; }
@@ -436,8 +438,8 @@
     <div id="interactive-animation-container">
         <div id="interaction-prompt"></div>
         <div id="canvas-wrapper">
-            <canvas id="stalk-canvas"></canvas>
         </div>
+        <canvas id="stalk-canvas"></canvas>
         <div id="yao-stats-container" class="collapsed">
             <div class="yao-stats-title">本爻演算</div>
             <div class="yao-stats-content">
@@ -519,9 +521,8 @@
         setupCanvas: function() {
             this.state.canvasContext = this.elements.canvas.getContext('2d');
             const dpr = window.devicePixelRatio || 1;
-            const rect = this.elements.canvas.getBoundingClientRect();
-            this.elements.canvas.width = rect.width * dpr;
-            this.elements.canvas.height = rect.height * dpr;
+            this.elements.canvas.width = window.innerWidth * dpr;
+            this.elements.canvas.height = window.innerHeight * dpr;
             this.state.canvasContext.scale(dpr, dpr);
         },
 
@@ -535,16 +536,13 @@
             if (!this.state.animationRunning) return;
             
             const ctx = this.state.canvasContext;
-            const canvas = this.elements.canvas;
-            const rect = canvas.getBoundingClientRect();
-
-            ctx.clearRect(0, 0, rect.width, rect.height);
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
             ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--stalk-color');
             
             this.state.stalks.forEach(stalk => {
                 ctx.save();
                 ctx.globalAlpha = stalk.alpha;
-                ctx.translate(stalk.x, stalk.y + stalk.height / 2);
+                ctx.translate(stalk.x, stalk.y);
                 ctx.rotate(stalk.rotation * Math.PI / 180);
                 ctx.scale(stalk.scale, stalk.scale);
                 ctx.fillRect(-stalk.width / 2, -stalk.height / 2, stalk.width, stalk.height);
@@ -589,20 +587,20 @@
                 this.elements.interactionPrompt.textContent = `第 ${changeName} 变，请点击分蓍草`;
                 
                 this.state.stalks = [];
-                const canvasRect = this.elements.canvas.getBoundingClientRect();
+                const boxRect = this.elements.canvasWrapper.getBoundingClientRect();
                 const stalkWidth = 2;
                 const stalkHeight = 100;
 
                 for (let i = 0; i < totalSticks; i++) {
-                    const stalk = this.createStalk(0, canvasRect.height / 2 - stalkHeight / 2, 0, stalkWidth, stalkHeight);
+                    const stalk = this.createStalk(0, 0, 0, stalkWidth, stalkHeight);
                     this.state.stalks.push(stalk);
                 }
 
                 gsap.fromTo(this.state.stalks, 
-                    { x: canvasRect.width / 2, y: canvasRect.height / 2 - stalkHeight / 2, rotation: 0 }, 
+                    { x: boxRect.left + boxRect.width / 2, y: boxRect.top + boxRect.height / 2, rotation: 0 }, 
                     { 
-                        x: (i) => canvasRect.width / 2 + (i - totalSticks / 2) * (canvasRect.width * 0.8 / totalSticks),
-                        y: () => canvasRect.height / 2 - stalkHeight / 2 + (Math.random() - 0.5) * 10,
+                        x: (i) => (boxRect.left + boxRect.width / 2) + (i - totalSticks / 2) * (boxRect.width * 0.8 / totalSticks),
+                        y: () => boxRect.top + boxRect.height / 2 + (Math.random() - 0.5) * 10,
                         rotation: () => (Math.random() - 0.5) * 15,
                         duration: 0.5, 
                         ease: 'power2.out' 
@@ -641,10 +639,8 @@
                     tl.to(rightRemainderStalks, { x: '+=30', scale: 1.2, duration: 0.3, ease: 'power2.out' }, '<');
                     
                     const allRemainders = [heldStalk, ...leftRemainderStalks, ...rightRemainderStalks];
-                    const canvas = this.elements.canvas;
-                    const dpr = window.devicePixelRatio || 1;
-                    const centerX = canvas.width / dpr / 2;
-                    const centerY = canvas.height / dpr / 2;
+                    const centerX = boxRect.left + boxRect.width / 2;
+                    const centerY = boxRect.top + boxRect.height / 2;
 
                     tl.to(allRemainders, {
                         x: centerX,
@@ -655,9 +651,15 @@
                         stagger: 0.02
                     }, "+=0.3");
                     
+                    const statsRect = this.elements.yaoStatsContainer.getBoundingClientRect();
+                    const targetX = statsRect.left + statsRect.width / 2;
+                    const targetY = statsRect.top;
+
                     tl.to(allRemainders, {
-                        y: window.innerHeight + 100, 
+                        x: targetX,
+                        y: targetY,
                         alpha: 0,
+                        scale: 0.2, 
                         duration: 0.8,
                         ease: 'power1.in',
                         stagger: {
@@ -667,7 +669,7 @@
                     });
                     
                     const remainingStalks = this.state.stalks.filter(s => !allRemainders.includes(s));
-                    tl.to(remainingStalks, { x: centerX, rotation: 0, alpha: 1, duration: 0.4, ease: 'power2.inOut' }, '-=0.5');
+                    tl.to(remainingStalks, { x: centerX, y: centerY, rotation: 0, alpha: 1, duration: 0.4, ease: 'power2.inOut' }, '-=0.5');
                 };
                 this.elements.canvasWrapper.addEventListener('click', clickHandler);
                 this.elements.canvasWrapper.style.cursor = 'pointer';
@@ -681,7 +683,6 @@
             
             this.elements.yaoStatsChanges.innerHTML = '';
             this.elements.yaoStatsResult.innerHTML = '';
-            // 每次生成新爻时，都将面板设为收起状态
             this.elements.yaoStatsContainer.classList.add('collapsed');
             gsap.to(this.elements.yaoStatsContainer, { opacity: 1, duration: 0.3 });
 
@@ -727,14 +728,15 @@
             this.setupCanvas();
             this.startAnimationLoop();
             this.elements.interactiveContainer.classList.add('visible');
+            // MODIFICATION: Wait for the container's fade-in animation to complete before calculating positions.
+            await new Promise(resolve => setTimeout(resolve, 500));
             this.elements.yaoStatsContainer.style.opacity = 0;
             this.state.divinationData = [];
             const originalYaoValues = [];
             const yaoNames = ['初', '二', '三', '四', '五', '上'];
             for (let i = 0; i < 6; i++) {
                 this.elements.interactionPrompt.textContent = `求 ${yaoNames[i]} 爻`;
-                // 缩短爻之间的等待时间，减少卡顿感
-                await new Promise(r => setTimeout(r, 150));
+                await new Promise(r => setTimeout(r, 150)); // Keep for pacing between yaos
                 const yaoResult = await this.generateYaoInteractively();
                 originalYaoValues.push(yaoResult.value);
                 this.state.divinationData.push(yaoResult);
@@ -1094,7 +1096,7 @@
             document.body.innerHTML = '<div style="color: white; text-align: center; padding-top: 50px; font-size: 1.2em;">无法加载数据文件 (data.js)，请检查文件路径是否正确并刷新页面。</div>';
         }
         // 调整全局动画速率，优化性能和观感
-        gsap.globalTimeline.timeScale(2.2);
+        gsap.globalTimeline.timeScale(2.5);
     };
     </script>
 </body>
