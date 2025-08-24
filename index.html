@@ -204,15 +204,51 @@
             height: 100%;
         }
 
+        /* MODIFICATION: Styles for collapsible stats panel */
         #yao-stats-container {
             position: absolute; 
-            bottom: 30px; 
-            left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
-            background: rgba(0,0,0,0.5); border-radius: 8px; padding: 10px; border: 1px solid var(--border-color);
-            display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0;
-            transition: opacity 0.5s ease; color: var(--primary-text);
+            bottom: 0; 
+            left: 50%; 
+            width: 90%; max-width: 400px;
+            background: rgba(0,0,0,0.6); 
+            border-radius: 8px 8px 0 0; 
+            padding: 10px; 
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            display: flex; flex-direction: column; align-items: center; gap: 8px; 
+            opacity: 0;
+            color: var(--primary-text);
+            cursor: pointer;
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform: translateX(-50%) translateY(calc(100% - 45px)); /* Default collapsed state */
         }
-        .yao-stats-title { font-size: 1em; color: var(--title-color); font-weight: bold; }
+        #yao-stats-container:not(.collapsed) {
+            transform: translateX(-50%) translateY(0);
+        }
+        .yao-stats-title { 
+            font-size: 1em; 
+            color: var(--title-color); 
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        /* Up/Down arrow indicator */
+        .yao-stats-title::before {
+            content: '▲';
+            font-size: 0.8em;
+            transition: transform 0.4s ease;
+        }
+        #yao-stats-container.collapsed .yao-stats-title::before {
+            transform: rotate(180deg);
+        }
+        .yao-stats-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
         .yao-stats-changes { display: flex; justify-content: center; gap: 10px; width: 100%; }
         .change-stat { background: rgba(255,255,255,0.1); padding: 5px 8px; border-radius: 4px; font-size: 0.8em; text-align: center; }
         .change-stat .label { font-size: 0.9em; opacity: 0.7; }
@@ -293,14 +329,12 @@
             .hexagram { flex: 1; min-width: 0; padding: 0 5px; }
             .hexagram h3 { font-size: 1em; margin-bottom: 6px; }
             .hexagram-name { font-size: 1.1em; margin-top: 6px; word-break: break-all; }
-            /* 再次加长移动端爻的长度 */
             .yao { width: 100%; max-width: 200px; height: 14px; margin: 3px auto; }
             .yao svg { height: 3px; }
             .yao-changing-symbol { font-size: 0.8em; right: -16px;}
             #yao-stats-container { 
                 padding: 8px; 
                 gap: 5px; 
-                bottom: 5vh;
             }
             .change-stat { font-size: 0.7em; padding: 4px 6px; }
             .yao-stats-result { font-size: 1em; }
@@ -390,10 +424,12 @@
         <div id="canvas-wrapper">
             <canvas id="stalk-canvas"></canvas>
         </div>
-        <div id="yao-stats-container">
+        <div id="yao-stats-container" class="collapsed">
             <div class="yao-stats-title">本爻演算</div>
-            <div id="yao-stats-changes" class="yao-stats-changes"></div>
-            <div id="yao-stats-result" class="yao-stats-result"></div>
+            <div class="yao-stats-content">
+                <div id="yao-stats-changes" class="yao-stats-changes"></div>
+                <div id="yao-stats-result" class="yao-stats-result"></div>
+            </div>
         </div>
     </div>
 
@@ -605,7 +641,6 @@
                         stagger: 0.02
                     }, "+=0.3");
                     
-                    // 动画：将多余的蓍草移动到屏幕可视范围之外
                     tl.to(allRemainders, {
                         y: window.innerHeight + 100, 
                         alpha: 0,
@@ -632,6 +667,8 @@
             
             this.elements.yaoStatsChanges.innerHTML = '';
             this.elements.yaoStatsResult.innerHTML = '';
+            // 每次生成新爻时，都将面板设为收起状态
+            this.elements.yaoStatsContainer.classList.add('collapsed');
             gsap.to(this.elements.yaoStatsContainer, { opacity: 1, duration: 0.3 });
 
             for (let i = 0; i < 3; i++) {
@@ -682,7 +719,8 @@
             const yaoNames = ['初', '二', '三', '四', '五', '上'];
             for (let i = 0; i < 6; i++) {
                 this.elements.interactionPrompt.textContent = `求 ${yaoNames[i]} 爻`;
-                await new Promise(r => setTimeout(r, 500));
+                // 缩短爻之间的等待时间，减少卡顿感
+                await new Promise(r => setTimeout(r, 150));
                 const yaoResult = await this.generateYaoInteractively();
                 originalYaoValues.push(yaoResult.value);
                 this.state.divinationData.push(yaoResult);
@@ -721,7 +759,6 @@
                 const linesContainer = this.elements.finalYaoLines;
                 linesContainer.innerHTML = ''; 
 
-                // 动画前重置样式，确保每次都能正确播放
                 gsap.set(overlay, { opacity: 0 });
                 gsap.set(linesContainer, { scale: 1, opacity: 1 });
 
@@ -741,7 +778,6 @@
                       duration: 0.5,
                       ease: 'back.out(1.7)'
                   })
-                  // 分别对爻和背景进行动画，避免边框问题
                   .to(linesContainer, {
                       scale: 0,
                       opacity: 0,
@@ -758,11 +794,9 @@
 
         // 总的卜卦启动函数
         startDivination: async function() {
-            // 移动端请求陀螺仪权限
             if (this.state.isMobile && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try { await DeviceOrientationEvent.requestPermission(); } catch (error) { console.error('陀螺仪权限请求失败:', error); }
             }
-            // 更新UI状态为“推演中”
             this.elements.divineButton.disabled = true;
             this.elements.divineButton.innerHTML = '推演中...<span class="loader"></span>';
             this.elements.resultContainer.style.display = 'none';
@@ -772,17 +806,14 @@
             document.body.classList.add('divining');
             
             let originalYaoValues;
-            // 根据选择的方法执行不同的卜卦流程
             if (this.state.divinationMethod === 'yarrow') {
                 originalYaoValues = await this.runYarrowDivination();
             } else {
                 originalYaoValues = await this.runRandomDivination();
             }
 
-            // 播放六爻动画
             await this.showFinalYaoAnimation(originalYaoValues);
 
-            // 显示最终结果
             document.body.classList.remove('divining');
             this.displayHexagrams(originalYaoValues);
             this.displayInterpretations(originalYaoValues);
@@ -811,7 +842,6 @@
             resetButton.textContent = '再算一卦';
             resetButton.addEventListener('click', (e) => {
                 this.addGlowEffect(e.currentTarget);
-                // 点击后重置UI到初始界面
                 this.elements.resultContainer.style.display = 'none';
                 this.elements.introSection.style.display = 'block';
                 this.elements.divineButton.parentElement.style.display = 'flex';
@@ -1005,6 +1035,11 @@
                 this.startDivination();
             });
 
+            // 添加点击事件来展开/收起演算面板
+            this.elements.yaoStatsContainer.addEventListener('click', () => {
+                this.elements.yaoStatsContainer.classList.toggle('collapsed');
+            });
+
             this.elements.interpretationModalOverlay.addEventListener('click', (e) => {
                 if (e.target === this.elements.interpretationModalOverlay) {
                     this.elements.interpretationModalOverlay.classList.remove('visible');
@@ -1045,7 +1080,7 @@
             document.body.innerHTML = '<div style="color: white; text-align: center; padding-top: 50px; font-size: 1.2em;">无法加载数据文件 (data.js)，请检查文件路径是否正确并刷新页面。</div>';
         }
         // 调整全局动画速率，优化性能和观感
-        gsap.globalTimeline.timeScale(1.8);
+        gsap.globalTimeline.timeScale(2.2);
     };
     </script>
 </body>
