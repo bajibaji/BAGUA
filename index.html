@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线卜卦 (优化版)</title>
+    
+    <!-- 引入 GSAP 动画库 -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #1a1a1a;
+            --container-bg: rgba(44, 44, 44, 0.85);
+            --primary-text: #e0e0e0;
+            --title-color: #d4af37;
+            --border-color: #444;
+            --button-bg: #8c735b;
+            --button-hover-bg: #a0856a;
+            --hexagram-bg: #333;
+            --changing-yao-color: #ff5555;
+            --glow-color: rgba(212, 175, 55, 0.7);
+            --original-hex-color: #61afef;
+            --changed-hex-color: #e06c75;
+            --stalk-color: #f0e68c; /* 蓍草颜色 */
+        }
+
+        body {
+            font-family: 'Noto Serif SC', serif;
+            background-color: var(--bg-color);
+            color: var(--primary-text);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.5s ease;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        #background-bagua {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 80vmax;
+            height: 80vmax;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            opacity: 0.08;
+            animation: slow-rotate 120s linear infinite;
+        }
+
+        @keyframes slow-rotate {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        body.divining {
+            background-color: #000;
+        }
+        body.divining::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, transparent 40%, #000 85%);
+            z-index: 99;
+            pointer-events: none;
+            opacity: 0;
+            animation: fadeInVignette 1s ease forwards;
+        }
+
+        @keyframes fadeInVignette { to { opacity: 1; } }
+
+        .container {
+            max-width: 800px; width: 95%; margin: auto; padding: 30px;
+            background-color: var(--container-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            box-sizing: border-box;
+            transition: opacity 0.5s ease, transform 0.2s ease-out;
+            opacity: 0;
+            animation: fadeInContainer 1s 0.2s ease forwards;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transform-style: preserve-3d;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+
+        @keyframes fadeInContainer { to { opacity: 1; } }
+
+        h1, h2, h3 { color: var(--title-color); text-align: center; font-weight: 700; }
+        h1 { font-size: 2.2em; margin-bottom: 25px; }
+        h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-top: 40px; margin-bottom: 20px; }
+        .section p { text-align: center; line-height: 1.8; font-size: 1.1em; margin-bottom: 20px; }
+        
+        .method-selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .method-selector label {
+            margin: 0 10px;
+            font-size: 1.1em;
+            color: var(--primary-text);
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+        .method-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .method-switch input { display: none; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #444;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px; width: 26px;
+            left: 4px; bottom: 4px;
+            background-color: var(--button-bg);
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--title-color); }
+        input:checked + .slider:before { transform: translateX(26px); }
+        #label-yarrow { opacity: 1; }
+
+        .button-wrapper { text-align: center; margin-top: 20px; position: relative; min-height: 60px; display: flex; justify-content: center; align-items: center; gap: 15px;}
+        button {
+            font-family: inherit; font-size: 1.2em; padding: 12px 25px; background-color: var(--button-bg);
+            color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        button:hover:not(:disabled) { 
+            background-color: var(--button-hover-bg); 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 20px var(--glow-color); 
+        }
+        button:active:not(:disabled) { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
+
+        /* --- 单独设置卦象解释按钮颜色 --- */
+        #interp-button {
+            background-color: #c93756; /* 朱红色 */
+        }
+        #interp-button:hover:not(:disabled) {
+            background-color: #e04a69; /* 悬停时更亮的朱红色 */
+        }
+
+        .button-glow-effect {
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            background: var(--title-color); border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0); opacity: 0.7;
+            animation: button-glow 0.6s ease-out;
+        }
+        @keyframes button-glow { to { transform: translate(-50%, -50%) scale(20); opacity: 0; } }
+
+        .loader {
+            width: 18px; height: 18px; border: 2px solid #FFF; border-bottom-color: transparent;
+            border-radius: 50%; display: inline-block; box-sizing: border-box;
+            animation: rotation 1s linear infinite; margin-left: 10px; vertical-align: middle;
+        }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #interactive-animation-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+        }
+        #interactive-animation-container.visible { opacity: 1; pointer-events: all; }
+        #interaction-prompt { color: var(--title-color); font-size: 1.5em; margin-bottom: 20px; text-shadow: 0 0 10px var(--glow-color); min-height: 1.5em;}
+        #stalks-wrapper {
+            width: 80%; max-width: 500px; height: 150px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; border: 2px dashed var(--border-color); border-radius: 10px;
+            padding: 10px; position: relative;
+        }
+        .stalk {
+            position: absolute; width: 2px; height: 100px;
+            background-color: var(--stalk-color); border-radius: 1px;
+            box-shadow: 0 0 5px var(--glow-color); transform-origin: bottom center;
+        }
+
+        #yao-stats-container {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
+            background: rgba(0,0,0,0.5); border-radius: 8px; padding: 10px; border: 1px solid var(--border-color);
+            display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0;
+            transition: opacity 0.5s ease; color: var(--primary-text);
+        }
+        .yao-stats-title { font-size: 1em; color: var(--title-color); font-weight: bold; }
+        .yao-stats-changes { display: flex; justify-content: center; gap: 10px; width: 100%; }
+        .change-stat { background: rgba(255,255,255,0.1); padding: 5px 8px; border-radius: 4px; font-size: 0.8em; text-align: center; }
+        .change-stat .label { font-size: 0.9em; opacity: 0.7; }
+        .change-stat .value { font-weight: bold; margin-top: 2px; }
+        .yao-stats-result { font-size: 1.1em; font-weight: bold; margin-top: 5px; background: var(--button-bg); padding: 4px 12px; border-radius: 5px; }
+
+        #result-container { display: none; margin-top: 30px; }
+        .hexagram-display { display: flex; justify-content: space-around; margin-top: 20px; padding: 20px; background-color: var(--hexagram-bg); border-radius: 8px; border: 1px solid var(--border-color); }
+        .hexagram { display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .hexagram h3 { font-size: 1.5em; margin-bottom: 15px; }
+        .yao-lines { display: flex; flex-direction: column-reverse; }
+        .hexagram-name { margin-top: 15px; font-size: 1.8em; font-weight: bold; height: 1.5em; letter-spacing: 2px; text-shadow: 0 0 8px rgba(0,0,0,0.5); }
+        #original-hexagram-name { color: var(--original-hex-color); }
+        #changed-hexagram-name { color: var(--changed-hex-color); }
+        .yao { display: flex; justify-content: center; align-items: center; height: 25px; margin: 8px 0; position: relative; width: 120px; }
+        .yao svg { width: 100%; height: 8px; display: block; }
+        .yao svg line { stroke: var(--primary-text); transition: stroke 0.3s ease; }
+        .yao.yao-changing svg line { stroke: var(--changing-yao-color); }
+        .yao-changing-symbol { position: absolute; right: -25px; top: 50%; transform: translateY(-50%); font-size: 1.2em; color: var(--changing-yao-color); font-weight: bold; }
+        
+        /* --- 解释弹窗样式 --- */
+        #interpretation-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+            z-index: 200; display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        #interpretation-modal-overlay.visible { opacity: 1; pointer-events: all; }
+        #interpretation-modal {
+            width: 90%; max-width: 600px; background: var(--container-bg);
+            border-radius: 10px; border: 1px solid var(--border-color);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column;
+            max-height: 80vh; transform: scale(0.9); transition: transform 0.3s ease;
+        }
+        #interpretation-modal-overlay.visible #interpretation-modal { transform: scale(1); }
+        #modal-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        #modal-tabs { display: flex; gap: 10px; }
+        .modal-tab {
+            background: transparent; border: 2px solid transparent; color: var(--primary-text);
+            opacity: 0.6; padding: 8px 16px; font-size: 1em; border-radius: 6px;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .modal-tab.active { opacity: 1; color: var(--title-color); border-bottom-color: var(--title-color); }
+        #modal-close-btn { background: none; border: none; color: var(--primary-text); font-size: 2.5em; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; padding: 0; line-height: 1; }
+        #modal-close-btn:hover { opacity: 1; }
+        #modal-content { padding: 25px; overflow-y: auto; line-height: 1.9; font-size: 1.1em; white-space: pre-wrap; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: contentFadeIn 0.5s ease; }
+        @keyframes contentFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        @media (max-width: 768px) {
+            body { align-items: center; padding: 0; }
+            .container { padding: 15px; margin: 0 2.5%; width: 95%; border-radius: 8px; overflow: auto; }
+            h1 { font-size: 1.5em; }
+            .hexagram-display { flex-direction: row; justify-content: space-around; align-items: flex-start; padding: 10px 5px; }
+            .hexagram { flex: 1; min-width: 0; padding: 0 5px; }
+            .hexagram h3 { font-size: 1em; margin-bottom: 6px; }
+            .hexagram-name { font-size: 1.1em; margin-top: 6px; word-break: break-all; }
+            .yao { width: 100%; max-width: 80px; height: 14px; margin: 3px auto; }
+            .yao svg { height: 3px; }
+            .yao-changing-symbol { font-size: 0.8em; right: -16px;}
+            #yao-stats-container { padding: 8px; gap: 5px; }
+            .change-stat { font-size: 0.7em; padding: 4px 6px; }
+            .yao-stats-result { font-size: 1em; }
+            button { font-size: 1em; padding: 10px 18px; }
+        }
+    </style>
+</head>
+<body>
+    
+    <div id="background-bagua">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" color="var(--primary-text)">
+            <defs>
+                <!-- [MODIFIED] Changed stroke-linecap from "round" to "butt" for square ends and slightly shortened the lines. -->
+                <g id="yang-line"><path d="M -5.5,0 L 5.5,0" stroke-width="1.5" stroke-linecap="butt"></path></g>
+                <g id="yin-line"><path d="M -5.5,0 L -1.5,0 M 1.5,0 L 5.5,0" stroke-width="1.5" stroke-linecap="butt"></path></g>
+            </defs>
+            <g stroke-width="0.5">
+                <circle cx="50" cy="50" r="48"></circle><circle cx="50" cy="50" r="43"></circle>
+                <circle cx="50" cy="50" r="35"></circle><circle cx="50" cy="50" r="34"></circle>
+                <circle cx="50" cy="50" r="26"></circle><circle cx="50" cy="50" r="25"></circle>
+                <circle cx="50" cy="50" r="17"></circle><circle cx="50" cy="50" r="16"></circle>
+            </g>
+            <g stroke-width="0">
+                <path d="M50 16 A 34 34 0 0 0 50 84 Z" fill="var(--bg-color)"></path>
+                <path d="M50 16 A 34 34 0 0 1 50 84 Z" fill="currentColor"></path>
+                <circle cx="50" cy="67" r="17" fill="currentColor"></circle>
+                <circle cx="50" cy="33" r="17" fill="var(--bg-color)"></circle>
+                <circle cx="50" cy="33" r="4" fill="currentColor"></circle>
+                <circle cx="50" cy="67" r="4" fill="var(--bg-color)"></circle>
+            </g>
+            <!-- [MODIFIED] Changed translate distance from -39 to -38.5 to pull the trigrams slightly towards the center. -->
+            <g transform="translate(50 50)">
+                 <g transform="translate(0, -38.5)"><use href="#yang-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
+                 <g transform="rotate(45) translate(0, -38.5)"><use href="#yin-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
+                 <g transform="rotate(90) translate(0, -38.5)"><use href="#yin-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
+                 <g transform="rotate(135) translate(0, -38.5)"><use href="#yin-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
+                 <g transform="rotate(180) translate(0, -38.5)"><use href="#yin-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
+                 <g transform="rotate(225) translate(0, -38.5)"><use href="#yang-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
+                 <g transform="rotate(270) translate(0, -38.5)"><use href="#yang-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
+                 <g transform="rotate(315) translate(0, -38.5)"><use href="#yang-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
+            </g>
+        </svg>
+    </div>
+
+    <div class="container" id="main-container">
+        <div id="intro-section">
+            <h1>大衍筮法 在线卜卦</h1>
+            <div class="section">
+                <p>心诚则灵，一事一问</p>
+            </div>
+            <div class="method-selector">
+                <label id="label-random">随机数法</label>
+                <label class="method-switch">
+                    <input type="checkbox" id="method-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+                <label id="label-yarrow">大衍筮法</label>
+            </div>
+        </div>
+        
+        <div class="button-wrapper">
+            <button id="divine-button">开始卜卦</button>
+        </div>
+
+        <div id="result-container">
+            <div class="hexagram-display">
+                <div class="hexagram">
+                    <h3>本卦</h3>
+                    <div id="original-hexagram" class="yao-lines"></div>
+                    <div id="original-hexagram-name" class="hexagram-name"></div>
+                </div>
+                <div class="hexagram" id="changed-hexagram-container">
+                    <h3>变卦</h3>
+                    <div id="changed-hexagram" class="yao-lines"></div>
+                    <div id="changed-hexagram-name" class="hexagram-name"></div>
+                </div>
+            </div>
+            <!-- 结果页按钮容器 -->
+            <div id="result-actions-wrapper" class="button-wrapper"></div>
+        </div>
+    </div>
+    
+    <div id="interactive-animation-container">
+        <div id="interaction-prompt"></div>
+        <div id="stalks-wrapper"></div>
+        <div id="yao-stats-container">
+            <div class="yao-stats-title">本爻演算</div>
+            <div id="yao-stats-changes" class="yao-stats-changes"></div>
+            <div id="yao-stats-result" class="yao-stats-result"></div>
+        </div>
+    </div>
+
+    <!-- 解释弹窗 HTML -->
+    <div id="interpretation-modal-overlay">
+        <div id="interpretation-modal">
+            <div id="modal-header">
+                <div id="modal-tabs">
+                    <button id="tab-original" class="modal-tab active">本卦</button>
+                    <button id="tab-changed" class="modal-tab">变卦</button>
+                </div>
+                <button id="modal-close-btn">&times;</button>
+            </div>
+            <div id="modal-content">
+                <div id="content-original" class="tab-content active"></div>
+                <div id="content-changed" class="tab-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // 卦象数据对象，增加了 interpretation 字段
+    const HEXAGRAM_DATA = {
+        '111111': { name: '乾', interpretation: `<b>乾: 元、亨、利、貞。</b>\n\n元為萬物之始生,亨為萬物之成長,利為萬物之遂成,貞為萬物之堅心,此為乾之性, 恆古不變,示人須有堅定不移之心志,萬事乃成於此。\n\n<b>初九:</b> 潛龍勿用。\n<b>九二:</b> 見龍在田,利見大人。\n<b>九三:</b> 君子終日乾乾,夕惕若厲,无咎。\n<b>九四:</b> 或躍在淵,无咎。\n<b>九五:</b> 飛龍在天,利見大人。\n<b>上九:</b> 亢龍有悔。\n<b>用九:</b> 見群龍無首,吉。` },
+        '000000': { name: '坤', interpretation: `<b>坤: 元、亨、利牝馬之貞。君子有攸往。</b>\n\n坤乃地之厚德,示人效地之性,如牝馬之柔順而健行也,貞示堅心,但與乾不同,乃堅心於柔順之念也。\n\n<b>初六:</b> 履霜,堅冰至。\n<b>六二:</b> 直方大,不習,无不利。\n<b>六三:</b> 含章可貞,或從王事,无成有終。\n<b>六四:</b> 括囊,无咎,无譽。\n<b>六五:</b> 黃裳,元吉。\n<b>上六:</b> 龍戰於野,其血玄黃。` },
+        '010001': { name: '屯', interpretation: `<b>屯: 元、亨、利、貞,勿用有攸往,利建侯。</b>\n\n此義處屯之時必貞固(堅心),須明非獨力能成,必廣資助,此利見侯之義。不可往,唯利建侯。\n\n<b>初九:</b> 盤桓,利居貞,利建侯。\n<b>六二:</b> 屯如 如,乘馬班如,匪寇,婚媾,女子貞不字,十年乃字。\n<b>六三:</b> 即鹿无虞,惟入于林中,君子幾,不如舍,往吝。\n<b>六四:</b> 乘馬班如,求婚媾,往吉,无不利。\n<b>九五:</b> 屯其膏,小貞吉,大貞凶。\n<b>上六:</b> 乘馬班如,泣血連如。` },
+        '100010': { name: '蒙', interpretation: `<b>蒙: 亨,匪我求童蒙,童蒙求我。初筮告,再三瀆,瀆則不告,利貞。</b>\n\n兒童之蒙,其未發蒙,而志則專一,此為童蒙,因有童蒙,則告之。因其童蒙,故必至誠一意以求必中。而發蒙之道,必以貞正方吉。\n\n<b>初六:</b> 發蒙,利用刑人,用說桎梏,以往吝。\n<b>九二:</b> 包蒙吉,納婦吉,子克家。\n<b>六三:</b> 勿用,取女見金夫,不有躬,无攸利。\n<b>六四:</b> 困蒙,吝。\n<b>六五:</b> 童蒙,吉。\n<b>上九:</b> 擊蒙,不利為寇,利禦寇。` },
+        '010111': { name: '需', interpretation: `<b>需: 有孚,光亨貞吉,利涉大川。</b>\n\n以二卦體而言,乾以剛健,如上進而遇險,此未可進也。需待之。以卦之爻言,五爻陽居陽位,乃陽剛中正之德人,居君位,而誠信充實於內(內卦為乾),則光明而可進,必亨,故利涉大川。\n\n<b>初九:</b> 需于郊,利用恆,无咎。\n<b>九二:</b> 需于沙,小有言,終吉。\n<b>九三:</b> 需于泥,致寇至。\n<b>六四:</b> 需于血,出自穴。\n<b>九五:</b> 需於酒食,貞吉。\n<b>上六:</b> 入于穴,有不速之客三人來,敬之終吉。` },
+        '111010': { name: '訟', interpretation: `<b>訟: 有孚,窒惕,中吉,終凶。利見大人,不利涉大川。</b>\n\n訟之道,必中實,如中無有實,乃誣妄,凶之道也。訟,乃與人爭辯,而待決於他人,雖有孚,仍會窒塞。故有得中實則吉,但終極其事則凶也。\n\n<b>初六:</b> 不永所事,小有言,終吉。\n<b>九二:</b> 不克訟,歸而逋,其邑人三百戶,无災。\n<b>六三:</b> 食舊德,貞厲終吉。或從王事,无成。\n<b>九四:</b> 不克訟,復即命,渝安貞,吉。\n<b>九五:</b> 訟,元吉。\n<b>上九:</b> 或錫之擊帶,終朝三褫之。` },
+        '000010': { name: '師', interpretation: `<b>師: 貞,丈人吉,无咎。</b>\n\n此言,師之道必有正名,因師之興,天下萬民必傷,如不以正,則民心不從,致凶之道。丈人,即尊貴有眾望之人,故出師必立帥將,此人必民所聽從順同,不能服眾,安得民心。如此則無災。故興師必有二道:正名與主將。\n\n<b>初六:</b> 師出以律,否臧凶。\n<b>九二:</b> 在師中,吉,无咎,王三錫命。\n<b>六三:</b> 師或輿尸,凶。\n<b>六四:</b> 師左次,无咎。\n<b>六五:</b> 田有禽,利執言,无咎。長子帥師,弟子輿尸,貞凶。\n<b>上六:</b> 大君有命,開國成家,小人勿用。` },
+        '010000': { name: '比', interpretation: `<b>比: 吉,原筮,元永貞,无咎。不寧方來,後夫凶。</b>\n\n比為吉之道。人相親比,必有其道,須視可比而決定比之,不可比而比,凶。如果等到不能自保安寧之時,方開始求親比,幸運的得所親比,可得平安。但如仍獨立自持,求親比之想法不前反後,即使是丈夫之親人,亦招凶矣。\n\n<b>初六:</b> 有孚,比之,无咎。有孚盈缶,終來有它,吉。\n<b>六二:</b> 比之自内,貞吉。\n<b>六三:</b> 比之匪人。\n<b>六四:</b> 外比之,貞吉。\n<b>九五:</b> 顯比,王用三驅,失前禽,邑人不誡,吉。\n<b>上六:</b> 比之无首,凶。` },
+        '110111': { name: '小畜', interpretation: `<b>小畜: 亨。密雲不雨,自我西郊。</b>\n\n此言雲之畜聚雖密,卻不能成雨,猶人雖聚,卻不能和之義。\n\n<b>初九:</b> 復自道,何其咎,吉。\n<b>九二:</b> 牽復,吉。\n<b>九三:</b> 輿說輻,夫妻反目。\n<b>六四:</b> 有孚,血去惕出,无咎。\n<b>九五:</b> 有孚攣如,富以其鄰。\n<b>上九:</b> 既雨既處,尚德載,婦貞厲。月幾望,君子征凶。` },
+        '111011': { name: '履', interpretation: `<b>履: 虎尾,不咥人,亨。</b>\n\n有禮之道即入險中,如踐虎尾,不見其反食人,乃因有禮也,所以亨也。故常言伸手不打笑臉人,同此。\n\n<b>初九:</b> 素履往,无咎。\n<b>九二:</b> 履道坦坦,幽人貞吉。\n<b>六三:</b> 眇能視,跛能履,履虎尾,咥人凶,武人為于大君。\n<b>九四:</b> 履虎尾,愬愬終吉。\n<b>九五:</b> 夬履貞厲。\n<b>上九:</b> 視履考祥,其旋元吉。` },
+        '000111': { name: '泰', interpretation: `<b>泰: 小往大來,吉亨。</b>\n\n陽氣下降,陰氣上升,陰陽和暢,萬物生焉,此天地之泰。人間之泰,大則居上,小則臣下,君王推誠任下,臣盡誠以事君,上下同志,朝廷之泰。君子,小人亦如是,君子處君位,小人居下位,天下之泰也。\n\n<b>初九:</b> 拔茅茹,以其彙,征吉。\n<b>九二:</b> 包荒,用馮河,不遐遺,朋亡,得尚于中行。\n<b>九三:</b> 无平不陂,无往不復,艱貞无咎,勿恤其孚,于食有福。\n<b>六四:</b> 翩翩不富,以其鄰,不戒以孚。\n<b>六五:</b> 帝乙歸妹,以祉元吉。\n<b>上六:</b> 城復于隍,勿用師,自邑告命,貞吝。` },
+        '111000': { name: '否', interpretation: `<b>否: 之匪人。不利君子貞,大往小來。</b>\n\n舉凡天地之間皆為人道,今天地不交,不生萬物,是無人道,故曰匪人。處此之時,君子不可堅心,因正道不行,小人道長之時。\n\n<b>初六:</b> 拔茅如,以其彙,貞吉,亨。\n<b>六二:</b> 包承,小人吉,大人否,亨。\n<b>六三:</b> 包羞。\n<b>九四:</b> 有命,无咎,疇離祉。\n<b>九五:</b> 休否,大人吉,其亡,其亡,繫于苞桑。\n<b>上九:</b> 傾否,先否後喜。` },
+        '111101': { name: '同人', interpretation: `<b>同人: 于野,亨。利涉大川,利君子貞。</b>\n\n野即遠與外之意,以天下大同之道,聖賢大公之心,使之無遠不同。常人之同,以私意所合,此暱親之情。故必于野,方可謂大同。天下皆同時,何險阻能阻礙?何艱困能致危?故利涉大川,君子須堅心於此。\n\n<b>初九:</b> 同人于門,无咎。\n<b>六二:</b> 同人于宗,吝。\n<b>九三:</b> 伏戎于莽,升其高陵,三歲不興。\n<b>九四:</b> 乘其墉,弗克攻,吉。\n<b>九五:</b> 同人,先號咷而後笑,大師克相遇。\n<b>上九:</b> 同人于郊,无悔。` },
+        '101111': { name: '大有', interpretation: `<b>大有: 元亨。</b>\n\n此乃以卦才而言,不言元亨利貞四德,乃恐與乾坤二卦相混淆,只言元亨乃盡元之義,元乃物之始,萬物生成之初皆為大善,因必有功用。此為大善之初,易經唯四卦,大有、蠱、升、鼎有元亨。\n\n<b>初九:</b> 无交害,匪咎,艱則无咎。\n<b>九二:</b> 大車以載,有攸往,无咎。\n<b>九三:</b> 公用亨于天子,小人弗克。\n<b>九四:</b> 匪其彭,无咎。\n<b>六五:</b> 厥孚交如,威如,吉。\n<b>上九:</b> 自天祐之,吉,无不利。` },
+        '000100': { name: '謙', interpretation: `<b>謙: 亨,君子有終。</b>\n\n有德而不居,為謙,人能以謙遜自處,無往不利。君子之志在達理,樂天命而無競之心,但求內充,退讓而不衿持。能安於謙,終身不易。小人則有慾必競,此種人見有德之人必攻之,即令有人告之謙遜,但終不能寬行固守。\n\n<b>初六:</b> 謙謙君子,用涉大川,吉。\n<b>六二:</b> 鳴謙,貞吉。\n<b>九三:</b> 勞謙,君子有終,吉。\n<b>六四:</b> 无不利,撝謙。\n<b>六五:</b> 不富以其鄰,利用侵伐,无不利。\n<b>上六:</b> 鳴謙,利用行師,征邑國。` },
+        '001000': { name: '豫', interpretation: `<b>豫: 利建侯,行師。</b>\n\n聖人體豫悅之道,知兵師之興,諸侯之封,必眾心和悦方成,故能君臨萬邦,能群聚大眾,唯和悅可也,此豫之時也。\n\n<b>初六:</b> 鳴豫,凶。\n<b>六二:</b> 介于石,不終日,貞吉。\n<b>六三:</b> 盱豫,悔。遲有悔。\n<b>九四:</b> 由豫,大有得,勿疑,朋盍簪。\n<b>六五:</b> 貞疾,恆不死。\n<b>上六:</b> 冥豫,成有渝,无咎。` },
+        '011001': { name: '隨', interpretation: `<b>隨: 元,亨,利,貞,无咎。</b>\n\n隨之道,可以致大亨通。君子之道,眾人所隨,又遇事擇所隨,隨能得道,必致大亨。今人君之從民意,臣下之從君意,人人隨從義,利在堅守隨義,隨因能正,其道必亨。\n\n<b>初九:</b> 官有渝,貞吉,出門交有功。\n<b>六二:</b> 係小子,失丈夫。\n<b>六三:</b> 係丈夫,失小子,隨有求得,利居貞。\n<b>九四:</b> 隨有獲,貞凶,有孚在道以明,何咎?\n<b>九五:</b> 孚於嘉,吉。\n<b>上六:</b> 拘係之,乃從維之,王用亨于西山。` },
+        '100110': { name: '蠱', interpretation: `<b>蠱: 元亨,利涉大川。先甲三日,後甲三日。</b>\n\n蠱之大者,乃時之艱難險阻,能有治蠱之才,則必亨通。甲為十干之首,意言事之始也。先甲三日,乃言治蠱之道,應先思其事之原,再思其事之後,乃知救弊之道。\n\n<b>初六:</b> 幹父之蠱,有子,考无咎,厲終吉。\n<b>九二:</b> 幹母之蠱,不可貞。\n<b>九三:</b> 幹父之蠱,小有悔,无大咎。\n<b>六四:</b> 裕父之蠱,往見吝。\n<b>六五:</b> 幹父之蠱,用譽。\n<b>上九:</b> 不事王侯,高尚其事。` },
+        '000011': { name: '臨', interpretation: `<b>臨: 元,亨,利,貞。至于八月有凶。</b>\n\n言臨之道,可致大亨也。二陽才剛生於下,聖人戒之於方盛,方盛而處衰,則可以防自滿,圖其永久,衰而後成,無及也,此乃成盛之道。\n\n<b>初九:</b> 咸臨,貞吉。\n<b>九二:</b> 咸臨,吉无不利。\n<b>六三:</b> 甘臨,无攸利,既憂之,无咎。\n<b>六四:</b> 至臨,无咎。\n<b>六五:</b> 知臨,大君之宜,吉。\n<b>上六:</b> 敦臨,吉,无咎。` },
+        '110000': { name: '觀', interpretation: `<b>觀: 盥而不薦,有孚顒若。</b>\n\n人於祭祀之始,求神之時,心念最專精之時也。居上位者,正其儀表,以為下民之觀,當始與終,皆能令民之觀如初始之專精,則盡觀之道也。\n\n<b>初六:</b> 童觀,小人无咎,君子吝。\n<b>六二:</b> 闚觀,利女貞。\n<b>六三:</b> 觀我生,進退。\n<b>六四:</b> 觀國之光,利用賓于王。\n<b>九五:</b> 觀我生,君子无咎。\n<b>上九:</b> 觀其生,君子无咎。` },
+        '101001': { name: '噬嗑', interpretation: `<b>噬嗑: 亨,利用獄。</b>\n\n此即天下之事不能亨通,乃因有間阻,非刑獄何以除之。\n\n<b>初九:</b> 屨校滅趾,无咎。\n<b>六二:</b> 噬膚滅鼻,无咎也。\n<b>六三:</b> 噬臘肉遇毒,小吝,无咎。\n<b>九四:</b> 噬乾胏,得金矢,利艱貞,吉。\n<b>六五:</b> 噬乾肉,得黃金,貞厲,无咎。\n<b>上九:</b> 何校滅耳,凶。` },
+        '100101': { name: '賁', interpretation: `<b>賁: 亨,小利有攸往。</b>\n\n賁亨之道,在小飾,如過飾則亂,故小利有攸往。\n\n<b>初九:</b> 賁其趾,舍車而徒。\n<b>六二:</b> 賁其須。\n<b>九三:</b> 賁如濡如,永貞吉。\n<b>六四:</b> 賁如皤如,白馬翰如,匪寇婚媾。\n<b>六五:</b> 賁於丘園,束帛戔戔,吝,終吉。\n<b>上九:</b> 白賁,无咎。` },
+        '100000': { name: '剝', interpretation: `<b>剝: 不利有攸往。</b>\n\n陰柔之小人道長,陽剛君子道消,故不利有攸往。\n\n<b>初六:</b> 剝床以足,蔑貞凶。\n<b>六二:</b> 剝床以辨,蔑貞凶。\n<b>六三:</b> 剝之,无咎。\n<b>六四:</b> 剝床以膚,凶。\n<b>六五:</b> 貫魚以宮人寵,无不利。\n<b>上九:</b> 碩果不食,君子得輿,小人剝廬。` },
+        '000001': { name: '復', interpretation: `<b>復: 亨,出入无疾,朋來无咎。反復其道,七日來復,利有攸往。</b>\n\n陽氣復生,故亨。陽為君子,故出入無疾。\n\n<b>初九:</b> 不遠復,无祇悔,元吉。\n<b>六二:</b> 休復,吉。\n<b>六三:</b> 頻復,厲,无咎。\n<b>六四:</b> 中行獨復。\n<b>六五:</b> 敦復,无悔。\n<b>上六:</b> 迷復,凶,有災眚。用行師,終有大敗,以其國君凶,至于十年不克征。` },
+        '111001': { name: '無妄', interpretation: `<b>無妄: 元,亨,利,貞。其匪正有眚,不利有攸往。</b>\n\n无妄之道,必元亨利貞,如不正則有災,故不利有攸往。\n\n<b>初九:</b> 无妄,往吉。\n<b>六二:</b> 不耕穫,不菑畬,則利有攸往。\n<b>六三:</b> 无妄之災,或繫之牛,行人之得,邑人之災。\n<b>九四:</b> 可貞,无咎。\n<b>九五:</b> 无妄之疾,勿藥有喜。\n<b>上九:</b> 无妄,行有眚,无攸利。` },
+        '100111': { name: '大畜', interpretation: `<b>大畜: 利貞,不家食吉,利涉大川。</b>\n\n大畜之道,利在貞正,不食於家,乃食於官,利涉險難。\n\n<b>初九:</b> 有厲,利已。\n<b>九二:</b> 輿說輻。\n<b>九三:</b> 良馬逐,利艱貞。日閑輿衛,利有攸往。\n<b>六四:</b> 童牛之牿,元吉。\n<b>六五:</b> 豶豕之牙,吉。\n<b>上九:</b> 何天之衢,亨。` },
+        '100001': { name: '頤', interpretation: `<b>頤: 貞吉,觀頤,自求口實。</b>\n\n頤養之道,在貞正則吉,觀其頤養之道,在口實。\n\n<b>初九:</b> 舍爾靈龜,觀我朵頤,凶。\n<b>六二:</b> 顛頤,拂經,于丘頤,征凶。\n<b>六三:</b> 拂頤,貞凶,十年勿用,无攸利。\n<b>六四:</b> 顛頤,吉,虎視眈眈,其欲逐逐,无咎。\n<b>六五:</b> 拂經,居貞吉,不可涉大川。\n<b>上九:</b> 由頤,厲吉,利涉大川。` },
+        '011110': { name: '大過', interpretation: `<b>大過: 棟橈,利有攸往,亨。</b>\n\n陽氣大過,故棟樑撓,利有所往,亨通。\n\n<b>初六:</b> 藉用白茅,无咎。\n<b>九二:</b> 枯楊生稊,老夫得其女妻,无不利。\n<b>九三:</b> 棟橈,凶。\n<b>九四:</b> 棟隆,吉,有它吝。\n<b>九五:</b> 枯楊生華,老婦得其士夫,无咎无譽。\n<b>上六:</b> 過涉滅頂,凶,无咎。` },
+        '010010': { name: '坎', interpretation: `<b>習坎: 有孚,維心亨,行有尚。</b>\n\n習坎之時,有誠信,維心亨通,行有尚。\n\n<b>初六:</b> 習坎,入于坎窞,凶。\n<b>九二:</b> 坎有險,求小得。\n<b>六三:</b> 來之坎坎,險且枕,入于坎窞,勿用。\n<b>六四:</b> 樽酒簋貳,用缶,納約自牖,終无咎。\n<b>九五:</b> 坎不盈,祇既平,无咎。\n<b>上六:</b> 係用徽纆,寘于叢棘,三歲不得,凶。` },
+        '101101': { name: '離', interpretation: `<b>離: 利貞,亨,畜牝牛,吉。</b>\n\n離為附麗,利在貞正,亨通,畜養母牛,吉。\n\n<b>初九:</b> 履錯然,敬之,无咎。\n<b>六二:</b> 黃離,元吉。\n<b>九三:</b> 日昃之離,不鼓缶而歌,則大耋之嗟,凶。\n<b>九四:</b> 突如其來如,焚如,死如,棄如。\n<b>六五:</b> 出涕沱若,戚嗟若,吉。\n<b>上九:</b> 王用出征,有嘉折首,獲匪其醜,无咎。` },
+        '011100': { name: '咸', interpretation: `<b>咸: 亨,利貞,取女吉。</b>\n\n咸為感應,亨通,利在貞正,娶女則吉。\n\n<b>初六:</b> 咸其拇。\n<b>六二:</b> 咸其腓,凶,居吉。\n<b>九三:</b> 咸其股,執其隨,往吝。\n<b>九四:</b> 貞吉悔亡,憧憧往來,朋從爾思。\n<b>九五:</b> 咸其脢,无悔。\n<b>上九:</b> 咸其輔頰舌。` },
+        '001110': { name: '恒', interpretation: `<b>恒: 亨,无咎,利貞,利有攸往。</b>\n\n恒久之道,亨通,無災,利在貞正,利有所往。\n\n<b>初六:</b> 浚恒,貞凶,无攸利。\n<b>九二:</b> 悔亡。\n<b>九三:</b> 不恒其德,或承之羞,貞吝。\n<b>九四:</b> 田无禽。\n<b>六五:</b> 恒其德,貞,婦人吉,夫子凶。\n<b>上九:</b> 振恒,凶。` },
+        '111100': { name: '遯', interpretation: `<b>遯: 亨,小利貞。</b>\n\n遯為退避,亨通,小事利在貞正。\n\n<b>初六:</b> 遯尾,厲,勿用有攸往。\n<b>六二:</b> 執之用黃牛之革,莫之勝說。\n<b>九三:</b> 係遯,有疾厲,畜臣妾吉。\n<b>九四:</b> 好遯,君子吉,小人否。\n<b>九五:</b> 嘉遯,貞吉。\n<b>上九:</b> 肥遯,无不利。` },
+        '001111': { name: '大壯', interpretation: `<b>大壯: 利貞。</b>\n\n大壯之道,利在貞正。\n\n<b>初九:</b> 壯于趾,征凶,有孚。\n<b>九二:</b> 貞吉。\n<b>九三:</b> 小人用壯,君子用罔,貞厲。羝羊觸藩,羸其角。\n<b>九四:</b> 貞吉悔亡,藩決不羸,壯于大輿之輹。\n<b>六五:</b> 喪羊于易,无悔。\n<b>上九:</b> 羝羊觸藩,不能退,不能遂,无攸利,艱則吉。` },
+        '101000': { name: '晉', interpretation: `<b>晉: 康侯用錫馬蕃庶,晝日三接。</b>\n\n晉為進,康侯用此道,受賜馬匹眾多,一日三次接見。\n\n<b>初六:</b> 晉如摧如,貞吉。罔孚,裕无咎。\n<b>六二:</b> 晉如愁如,貞吉。受茲介福,于其王母。\n<b>六三:</b> 眾允,悔亡。\n<b>九四:</b> 晉如鼫鼠,貞厲。\n<b>六五:</b> 悔亡,失得勿恤,往吉,无不利。\n<b>上九:</b> 晉其角,維用伐邑,厲吉,无咎,貞吝。` },
+        '000101': { name: '明夷', interpretation: `<b>明夷: 利艱貞。</b>\n\n明夷為光明受傷,利在艱難中守正。\n\n<b>初九:</b> 明夷于飛,垂其翼。君子于行,三日不食,有攸往,主人有言。\n<b>六二:</b> 明夷,夷于左股,用拯馬壯,吉。\n<b>九三:</b> 明夷于南狩,得其大首,不可疾貞。\n<b>六四:</b> 入于左腹,獲明夷之心,于出門庭。\n<b>六五:</b> 箕子之明夷,利貞。\n<b>上六:</b> 不明晦,初登于天,後入于地。` },
+        '110101': { name: '家人', interpretation: `<b>家人: 利女貞。</b>\n\n家人之道,利在女子守正。\n\n<b>初九:</b> 閑有家,悔亡。\n<b>六二:</b> 无攸遂,在中饋,貞吉。\n<b>九三:</b> 家人嗃嗃,悔厲吉。婦子嘻嘻,終吝。\n<b>六四:</b> 富家,大吉。\n<b>九五:</b> 王假有家,勿恤吉。\n<b>上九:</b> 有孚威如,終吉。` },
+        '101011': { name: '睽', interpretation: `<b>睽: 小事吉。</b>\n\n睽為乖違,小事吉。\n\n<b>初九:</b> 悔亡,喪馬勿逐,自復。見惡人,无咎。\n<b>九二:</b> 遇主于巷,无咎。\n<b>六三:</b> 見輿曳,其牛掣,其人天且劓,无初有終。\n<b>九四:</b> 睽孤,遇元夫,交孚,厲无咎。\n<b>六五:</b> 悔亡,厥宗噬膚,往何咎。\n<b>上九:</b> 睽孤,見豕負塗,載鬼一車,先張之弧,後說之弧,匪寇婚媾,往遇雨則吉。` },
+        '010100': { name: '蹇', interpretation: `<b>蹇: 利西南,不利東北。利見大人,貞吉。</b>\n\n蹇為艱難,利西南,不利東北。利見大人,貞正則吉。\n\n<b>初六:</b> 往蹇來譽。\n<b>六二:</b> 王臣蹇蹇,匪躬之故。\n<b>九三:</b> 往蹇來反。\n<b>六四:</b> 往蹇來連。\n<b>六五:</b> 大蹇朋來。\n<b>上六:</b> 往蹇來碩,吉,利見大人。` },
+        '001010': { name: '解', interpretation: `<b>解: 利西南,无所往,其來復吉。有攸往,夙吉。</b>\n\n解為緩解,利西南,無所往,其來復吉。有所往,早則吉。\n\n<b>初六:</b> 无咎。\n<b>九二:</b> 田獲三狐,得黃矢,貞吉。\n<b>六三:</b> 負且乘,致寇至,貞吝。\n<b>六四:</b> 解而拇,朋至斯孚。\n<b>六五:</b> 君子維有解,吉,有孚于小人。\n<b>上六:</b> 公用射隼于高墉之上,獲之,无不利。` },
+        '100011': { name: '損', interpretation: `<b>損: 有孚,元吉,无咎,可貞,利有攸往。曷之用,二簋可用享。</b>\n\n損己益人,有誠信,大吉,無災,可守正,利有所往。如何用?二簋可用於祭享。\n\n<b>初九:</b> 已事遄往,无咎,酌損之。\n<b>九二:</b> 利貞,征凶,弗損益之。\n<b>六三:</b> 三人行,則損一人;一人行,則得其友。\n<b>六四:</b> 損其疾,使遄有喜,无咎。\n<b>六五:</b> 或益之十朋之龜,弗克違,元吉。\n<b>上九:</b> 弗損益之,无咎,貞吉,利有攸往,得臣无家。` },
+        '110001': { name: '益', interpretation: `<b>益: 利有攸往,利涉大川。</b>\n\n益為增益,利有所往,利涉大川。\n\n<b>初九:</b> 利用為大作,元吉,无咎。\n<b>六二:</b> 或益之十朋之龜,弗克違,永貞吉。王用享于帝,吉。\n<b>六三:</b> 益之用凶事,无咎。有孚中行,告公用圭。\n<b>六四:</b> 中行,告公從。利用為依遷國。\n<b>九五:</b> 有孚惠心,勿問元吉。有孚惠我德。\n<b>上九:</b> 莫益之,或擊之,立心勿恆,凶。` },
+        '011111': { name: '夬', interpretation: `<b>夬: 揚于王庭,孚號,有厲,告自邑,不利即戎,利有攸往。</b>\n\n夬為決斷,宣揚於王庭,誠信呼號,有危厲,從自己城邑告誡,不利於用兵,利有所往。\n\n<b>初九:</b> 壯于前趾,往不勝為咎。\n<b>九二:</b> 惕號,莫夜有戎,勿恤。\n<b>九三:</b> 壯于頄,有凶。君子夬夬,獨行遇雨,若濡有慍,无咎。\n<b>九四:</b> 臀无膚,其行次且。牽羊悔亡,聞言不信。\n<b>九五:</b> 莧陸夬夬,中行无咎。\n<b>上六:</b> 无號,終有凶。` },
+        '111110': { name: '姤', interpretation: `<b>姤: 女壯,勿用取女。</b>\n\n姤為相遇,女子強壯,不可娶此女。\n\n<b>初六:</b> 繫于金柅,貞吉,有攸往,見凶,羸豕孚蹢躅。\n<b>九二:</b> 包有魚,无咎,不利賓。\n<b>九三:</b> 臀无膚,其行次且,厲,无大咎。\n<b>九四:</b> 包无魚,起凶。\n<b>九五:</b> 以杞包瓜,含章,有隕自天。\n<b>上九:</b> 姤其角,吝,无咎。` },
+        '011000': { name: '萃', interpretation: `<b>萃: 亨,王假有廟,利見大人,亨,利貞。用大牲吉,利有攸往。</b>\n\n萃為聚集,亨通,王到宗廟,利見大人,亨通,利在貞正。用大牲畜祭祀吉,利有所往。\n\n<b>初六:</b> 有孚不終,乃亂乃萃,若號,一握為笑,勿恤,往无咎。\n<b>六二:</b> 引吉,无咎,孚乃利用禴。\n<b>六三:</b> 萃如嗟如,无攸利,往无咎,小吝。\n<b>九四:</b> 大吉,无咎。\n<b>九五:</b> 萃有位,无咎。匪孚,元永貞,悔亡。\n<b>上六:</b> 齎咨涕洟,无咎。` },
+        '000110': { name: '升', interpretation: `<b>升: 元亨,用見大人,勿恤,南征吉。</b>\n\n升為上升,大亨通,宜見大人,勿憂,向南征伐吉。\n\n<b>初六:</b> 允升,大吉。\n<b>九二:</b> 孚乃利用禴,无咎。\n<b>九三:</b> 升虛邑。\n<b>六四:</b> 王用亨于岐山,吉,无咎。\n<b>六五:</b> 貞吉,升階。\n<b>上六:</b> 冥升,利于不息之貞。` },
+        '011010': { name: '困', interpretation: `<b>困: 亨,貞,大人吉,无咎,有言不信。</b>\n\n困頓之時,亨通,貞正,大人吉,無災,說話不被相信。\n\n<b>初六:</b> 臀困于株木,入于幽谷,三歲不覿。\n<b>九二:</b> 困于酒食,朱紱方來,利用亨祀,征凶,无咎。\n<b>六三:</b> 困于石,據于蒺藜,入于其宮,不見其妻,凶。\n<b>六四:</b> 來徐徐,困于金車,吝,有終。\n<b>九五:</b> 劓刖,困于赤紱,乃徐有說,利用祭祀。\n<b>上六:</b> 困于葛藟,于臲卼,曰動悔有悔,征吉。` },
+        '010110': { name: '井', interpretation: `<b>井: 改邑不改井,无喪无得,往來井井。汔至,亦未繘井,羸其瓶,凶。</b>\n\n井,改邑不改井,無喪無得,往來井井。水將至,未及打水,毀其瓶,凶。\n\n<b>初六:</b> 井泥不食,舊井无禽。\n<b>九二:</b> 井谷射鮒,甕敝漏。\n<b>九三:</b> 井渫不食,為我心惻,可用汲,王明,並受其福。\n<b>六四:</b> 井甃,无咎。\n<b>九五:</b> 井冽,寒泉食。\n<b>上六:</b> 井收勿幕,有孚元吉。` },
+        '011101': { name: '革', interpretation: `<b>革: 己日乃孚,元亨,利貞,悔亡。</b>\n\n革為變革,到己日才有誠信,大亨通,利在貞正,悔恨消失。\n\n<b>初九:</b> 鞏用黃牛之革。\n<b>六二:</b> 己日乃革之,征吉,无咎。\n<b>九三:</b> 征凶,貞厲,革言三就有孚。\n<b>九四:</b> 悔亡,有孚改命,吉。\n<b>九五:</b> 大人虎變,未占有孚。\n<b>上六:</b> 君子豹變,小人革面,征凶,居貞吉。` },
+        '101110': { name: '鼎', interpretation: `<b>鼎: 元吉,亨。</b>\n\n鼎為重器,大吉,亨通。\n\n<b>初六:</b> 鼎顛趾,利出否,得妾以其子,无咎。\n<b>九二:</b> 鼎有實,我仇有疾,不我能即,吉。\n<b>九三:</b> 鼎耳革,其行塞,雉膏不食,方雨虧悔,終吉。\n<b>九四:</b> 鼎折足,覆公餗,其形渥,凶。\n<b>六五:</b> 鼎黃耳金鉉,利貞。\n<b>上九:</b> 鼎玉鉉,大吉,无不利。` },
+        '001001': { name: '震', interpretation: `<b>震: 亨。震來虩虩,笑言啞啞。震驚百里,不喪匕鬯。</b>\n\n震為雷動,亨通。雷來恐懼,笑語喧嘩。雷震百里,不失匙酒。\n\n<b>初九:</b> 震來虩虩,後笑言啞啞,吉。\n<b>六二:</b> 震來厲,億喪貝,躋于九陵,勿逐,七日得。\n<b>六三:</b> 震蘇蘇,震行无眚。\n<b>九四:</b> 震遂泥。\n<b>六五:</b> 震往來厲,億无喪,有事。\n<b>上六:</b> 震索索,視矍矍,征凶。震不于其躬,于其鄰,无咎。婚媾有言。` },
+        '100100': { name: '艮', interpretation: `<b>艮: 艮其背,不獲其身,行其庭,不見其人,无咎。</b>\n\n艮為止,止其背,不見其身,行其庭,不見其人,無災。\n\n<b>初六:</b> 艮其趾,无咎,利永貞。\n<b>六二:</b> 艮其腓,不拯其隨,其心不快。\n<b>九三:</b> 艮其限,列其夤,厲薰心。\n<b>六四:</b> 艮其身,无咎。\n<b>六五:</b> 艮其輔,言有序,悔亡。\n<b>上九:</b> 敦艮,吉。` },
+        '110100': { name: '漸', interpretation: `<b>漸: 女歸吉,利貞。</b>\n\n漸為漸進,女子出嫁吉,利在貞正。\n\n<b>初六:</b> 鴻漸于干,小子厲,有言,无咎。\n<b>六二:</b> 鴻漸于磐,飲食衎衎,吉。\n<b>九三:</b> 鴻漸于陸,夫征不復,婦孕不育,凶。利禦寇。\n<b>六四:</b> 鴻漸于木,或得其桷,无咎。\n<b>六五:</b> 鴻漸于陵,婦三歲不孕,終莫之勝,吉。\n<b>上九:</b> 鴻漸于逵,其羽可用為儀,吉。` },
+        '001011': { name: '歸妹', interpretation: `<b>歸妹: 征凶,无攸利。</b>\n\n歸妹為少女出嫁,征伐凶,無所利。\n\n<b>初九:</b> 歸妹以娣,跛能履,征吉。\n<b>九二:</b> 眇能視,利幽人之貞。\n<b>六三:</b> 歸妹以須,反歸以娣。\n<b>九四:</b> 歸妹愆期,遲歸有時。\n<b>六五:</b> 帝乙歸妹,其君之袂,不如其娣之袂良,月幾望,吉。\n<b>上六:</b> 女承筐无實,士刲羊无血,无攸利。` },
+        '001101': { name: '豐', interpretation: `<b>豐: 亨,王假之,勿憂,宜日中。</b>\n\n豐為盛大,亨通,王到來,勿憂,宜日中之時。\n\n<b>初九:</b> 遇其配主,雖旬无咎,往有尚。\n<b>六二:</b> 豐其蔀,日中見斗,往得疑疾,有孚發若,吉。\n<b>九三:</b> 豐其沛,日中見沬,折其右肱,无咎。\n<b>六四:</b> 豐其蔀,日中見斗,遇其夷主,吉。\n<b>六五:</b> 來章,有慶譽,吉。\n<b>上九:</b> 豐其屋,蔀其家,闚其戶,闃其无人,三歲不覿,凶。` },
+        '101100': { name: '旅', interpretation: `<b>旅: 小亨,旅貞吉。</b>\n\n旅為行旅,小亨通,行旅守正則吉。\n\n<b>初六:</b> 旅瑣瑣,斯其所取災。\n<b>六二:</b> 旅即次,懷其資,得童僕貞。\n<b>九三:</b> 旅焚其次,喪其童僕,貞厲。\n<b>九四:</b> 旅于處,得其資斧,我心不快。\n<b>六五:</b> 射雉一矢亡,終以譽命。\n<b>上九:</b> 鳥焚其巢,旅人先笑後號咷。喪牛于易,凶。` },
+        '110110': { name: '巽', interpretation: `<b>巽: 小亨,利有攸往,利見大人。</b>\n\n巽為順入,小亨通,利有所往,利見大人。\n\n<b>初六:</b> 進退,利武人之貞。\n<b>九二:</b> 巽在床下,用史巫紛若,吉,无咎。\n<b>九三:</b> 頻巽,吝。\n<b>六四:</b> 悔亡,田獲三品。\n<b>九五:</b> 貞吉悔亡,无不利。无初有終,先庚三日,後庚三日,吉。\n<b>上九:</b> 巽在床下,喪其資斧,貞凶。` },
+        '011011': { name: '兌', interpretation: `<b>兌: 亨,利貞。</b>\n\n兌為喜悅,亨通,利在貞正。\n\n<b>初九:</b> 和兌,吉。\n<b>九二:</b> 孚兌,吉,悔亡。\n<b>六三:</b> 來兌,凶。\n<b>九四:</b> 商兌未寧,介疾有喜。\n<b>九五:</b> 孚于剝,有厲。\n<b>上六:</b> 引兌。` },
+        '110010': { name: '渙', interpretation: `<b>渙: 亨,王假有廟,利涉大川,利貞。</b>\n\n渙為渙散,亨通,王到宗廟,利涉大川,利在貞正。\n\n<b>初六:</b> 用拯馬壯,吉。\n<b>九二:</b> 渙奔其机,悔亡。\n<b>六三:</b> 渙其躬,无悔。\n<b>六四:</b> 渙其群,元吉。渙有丘,匪夷所思。\n<b>九五:</b> 渙汗其大號,渙王居,无咎。\n<b>上六:</b> 渙其血,去逖出,无咎。` },
+        '010011': { name: '節', interpretation: `<b>節: 亨,苦節不可貞。</b>\n\n節為節制,亨通,苦守節制不可固守。\n\n<b>初九:</b> 不出戶庭,无咎。\n<b>九二:</b> 不出門庭,凶。\n<b>六三:</b> 不節若,則嗟若,无咎。\n<b>九四:</b> 安節,亨。\n<b>六五:</b> 甘節,吉,往有尚。\n<b>上六:</b> 苦節,貞凶,悔亡。` },
+        '110011': { name: '中孚', interpretation: `<b>中孚: 豚魚吉,利涉大川,利貞。</b>\n\n中孚為心中誠信,豚魚吉,利涉大川,利在貞正。\n\n<b>初九:</b> 虞吉,有它不燕。\n<b>九二:</b> 鳴鶴在陰,其子和之,我有好爵,吾與爾靡之。\n<b>六三:</b> 得敵,或鼓或罷,或泣或歌。\n<b>六四:</b> 月幾望,馬匹亡,无咎。\n<b>九五:</b> 有孚攣如,无咎。\n<b>上九:</b> 翰音登于天,貞凶。` },
+        '001100': { name: '小過', interpretation: `<b>小過: 亨,利貞,可小事,不可大事。飛鳥遺之音,不宜上,宜下,大吉。</b>\n\n小過為稍稍過度,亨通,利在貞正,可做小事,不可做大事。飛鳥留下聲音,不宜上,宜下,大吉。\n\n<b>初六:</b> 飛鳥以凶。\n<b>六二:</b> 過其祖,遇其妣,不及其君,遇其臣,无咎。\n<b>九三:</b> 弗過防之,從或戕之,凶。\n<b>六四:</b> 无咎,弗過遇之。往厲必戒,勿用永貞。\n<b>六五:</b> 密雲不雨,自我西郊,公弋取彼在穴。\n<b>上六:</b> 弗遇過之,飛鳥離之,凶,是謂災眚。` },
+        '010101': { name: '既濟', interpretation: `<b>既濟: 亨,小利貞,初吉終亂。</b>\n\n既濟為事已成,亨通,小利在貞正,開始吉,終將亂。\n\n<b>初九:</b> 曳其輪,濡其尾,无咎。\n<b>六二:</b> 婦喪其茀,勿逐,七日得。\n<b>九三:</b> 高宗伐鬼方,三年克之,小人勿用。\n<b>六四:</b> 繻有衣袽,終日戒。\n<b>九五:</b> 東鄰殺牛,不如西鄰之禴祭,實受其福。\n<b>上六:</b> 濡其首,厲。` },
+        '101010': { name: '未濟', interpretation: `<b>未濟: 亨,小狐汔濟,濡其尾,无攸利。</b>\n\n未濟為事未成,亨通,小狐狸將渡過河,濕了尾巴,無所利。\n\n<b>初六:</b> 濡其尾,吝。\n<b>九二:</b> 曳其輪,貞吉。\n<b>六三:</b> 未濟,征凶,利涉大川。\n<b>九四:</b> 貞吉悔亡,震用伐鬼方,三年有賞于大國。\n<b>六五:</b> 貞吉,无悔,君子之光,有孚,吉。\n<b>上九:</b> 有孚于飲酒,无咎,濡其首,有孚失是。` }
+    };
+
+    const app = {
+        elements: {
+            divineButton: document.getElementById('divine-button'),
+            interactiveContainer: document.getElementById('interactive-animation-container'),
+            interactionPrompt: document.getElementById('interaction-prompt'),
+            stalksWrapper: document.getElementById('stalks-wrapper'),
+            resultContainer: document.getElementById('result-container'),
+            originalHexagram: document.getElementById('original-hexagram'),
+            changedHexagram: document.getElementById('changed-hexagram'),
+            originalHexagramName: document.getElementById('original-hexagram-name'),
+            changedHexagramName: document.getElementById('changed-hexagram-name'),
+            mainContainer: document.getElementById('main-container'),
+            introSection: document.getElementById('intro-section'),
+            changedHexagramContainer: document.getElementById('changed-hexagram-container'),
+            methodToggle: document.getElementById('method-toggle'),
+            labelYarrow: document.getElementById('label-yarrow'),
+            labelRandom: document.getElementById('label-random'),
+            yaoStatsContainer: document.getElementById('yao-stats-container'),
+            yaoStatsChanges: document.getElementById('yao-stats-changes'),
+            yaoStatsResult: document.getElementById('yao-stats-result'),
+            resultActionsWrapper: document.getElementById('result-actions-wrapper'),
+            interpretationModalOverlay: document.getElementById('interpretation-modal-overlay'),
+        },
+        
+        state: {
+            divinationData: [],
+            isMobile: /Mobi|Android/i.test(navigator.userAgent),
+            divinationMethod: 'yarrow',
+            isCalibrated: false,
+            baseBeta: 0,
+            baseGamma: 0,
+            currentOriginalHexKey: null,
+            currentChangedHexKey: null,
+        },
+
+        performChangeWithInteraction: function(totalSticks, clickRatio) {
+            if (totalSticks <= 1) return { total: totalSticks, left: totalSticks, right: 0, leftRem: totalSticks, rightRem: 0, removed: 0, remaining: totalSticks };
+            let leftPile = Math.round(totalSticks * clickRatio);
+            if (leftPile < 1) leftPile = 1;
+            if (leftPile >= totalSticks) leftPile = totalSticks - 1;
+            const rightPile = totalSticks - leftPile;
+            const rightPileForCounting = rightPile - 1;
+            let leftRemainder = leftPile % 4;
+            if (leftRemainder === 0) leftRemainder = 4;
+            let rightRemainder = rightPileForCounting % 4;
+            if (rightRemainder === 0) rightRemainder = 4;
+            const totalRemoved = 1 + leftRemainder + rightRemainder;
+            const remainingSticks = totalSticks - totalRemoved;
+            return { total: totalSticks, left: leftPile, right: rightPile, leftRem: leftRemainder, rightRem: rightRemainder, removed: totalRemoved, remaining: remainingSticks };
+        },
+        
+        getChangeFromUser: function(totalSticks, changeName) {
+            return new Promise(resolve => {
+                this.elements.interactionPrompt.textContent = `第 ${changeName} 变，请点击分蓍草`;
+                this.elements.stalksWrapper.innerHTML = '';
+                const stalks = [];
+                for (let i = 0; i < totalSticks; i++) {
+                    const stalk = document.createElement('div');
+                    stalk.className = 'stalk';
+                    this.elements.stalksWrapper.appendChild(stalk);
+                    stalks.push(stalk);
+                }
+                gsap.fromTo(stalks, { x: 0, y: 0, rotation: 0 }, { x: (i) => (i - totalSticks / 2) * (this.elements.stalksWrapper.offsetWidth * 0.8 / totalSticks), y: () => (Math.random() - 0.5) * 10, rotation: () => (Math.random() - 0.5) * 15, duration: 0.5, ease: 'power2.out' });
+                
+                const clickHandler = (e) => {
+                    this.elements.stalksWrapper.removeEventListener('click', clickHandler);
+                    this.elements.stalksWrapper.style.cursor = 'default';
+                    
+                    const rect = this.elements.stalksWrapper.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const clickRatio = clickX / rect.width;
+                    const changeResult = this.performChangeWithInteraction(totalSticks, clickRatio);
+                    
+                    this.elements.interactionPrompt.textContent = `天: ${changeResult.left}, 地: ${changeResult.right}`;
+
+                    const tl = gsap.timeline({ onComplete: () => resolve(changeResult) });
+                    const leftStalks = stalks.slice(0, changeResult.left);
+                    const rightStalks = stalks.slice(changeResult.left);
+
+                    tl.to(leftStalks, { x: '-=100', rotation: -20, duration: 0.3, ease: 'power2.inOut', stagger: 0.005 });
+                    tl.to(rightStalks, { x: '+=100', rotation: 20, duration: 0.3, ease: 'power2.inOut', stagger: 0.005 }, '<');
+                    const heldStalk = rightStalks.pop();
+                    tl.to(heldStalk, { y: -80, x: '+=20', rotation: 15, duration: 0.3, ease: 'power2.out' }, '-=0.2');
+                    const leftRemainderStalks = leftStalks.slice(0, changeResult.leftRem);
+                    const rightRemainderStalks = rightStalks.slice(0, changeResult.rightRem);
+                    const nonRemainderLeft = leftStalks.filter(s => !leftRemainderStalks.includes(s));
+                    const nonRemainderRight = rightStalks.filter(s => !rightRemainderStalks.includes(s));
+                    tl.to([...nonRemainderLeft, ...nonRemainderRight], { opacity: 0.3, duration: 0.2 }, '+=0.1');
+                    tl.to(leftRemainderStalks, { x: '-=30', scale: 1.2, duration: 0.3, ease: 'power2.out' }, '<');
+                    tl.to(rightRemainderStalks, { x: '+=30', scale: 1.2, duration: 0.3, ease: 'power2.out' }, '<');
+                    const allRemainders = [heldStalk, ...leftRemainderStalks, ...rightRemainderStalks];
+                    const stalksWrapperRect = this.elements.stalksWrapper.getBoundingClientRect();
+                    const targetX = (window.innerWidth / 2) - (stalksWrapperRect.left + stalksWrapperRect.width / 2);
+                    const targetY = (window.innerHeight / 2) - (stalksWrapperRect.top + stalksWrapperRect.height / 2);
+                    tl.to(allRemainders, { x: targetX, y: targetY, scale: 1, duration: 0.5, stagger: 0.05, ease: 'power2.inOut' }, '+=0.3');
+                    tl.to(allRemainders, { y: `+=${window.innerHeight / 2 + 100}`, opacity: 0, duration: 0.6, stagger: 0.03, ease: 'power2.in' });
+                    const remainingStalks = stalks.filter(s => !allRemainders.includes(s));
+                    tl.to(remainingStalks, { x: 0, rotation: 0, opacity: 1, duration: 0.4, ease: 'power2.inOut' }, '-=0.5');
+                };
+                this.elements.stalksWrapper.addEventListener('click', clickHandler);
+                this.elements.stalksWrapper.style.cursor = 'pointer';
+            });
+        },
+
+        generateYaoInteractively: async function() {
+            let sticks = 49;
+            const changes = [];
+            
+            this.elements.yaoStatsChanges.innerHTML = '';
+            this.elements.yaoStatsResult.innerHTML = '';
+            gsap.to(this.elements.yaoStatsContainer, { opacity: 1, duration: 0.3 });
+
+            for (let i = 0; i < 3; i++) {
+                const changeNames = ['一', '二', '三'];
+                const changeResult = await this.getChangeFromUser(sticks, changeNames[i]);
+                sticks = changeResult.remaining;
+                changes.push(changeResult);
+
+                const changeStatEl = document.createElement('div');
+                changeStatEl.className = 'change-stat';
+                changeStatEl.innerHTML = `<div class="label">第${changeNames[i]}变</div><div class="value">余 ${changeResult.remaining}</div>`;
+                this.elements.yaoStatsChanges.appendChild(changeStatEl);
+                gsap.from(changeStatEl, { opacity: 0, scale: 0.5, duration: 0.4, ease: 'back.out' });
+            }
+            const yaoValue = sticks / 4;
+            const yaoInfo = this.getYaoInfo(yaoValue);
+            
+            this.elements.yaoStatsResult.textContent = `本爻蓍草: ${yaoValue * 4} 根`;
+            gsap.from(this.elements.yaoStatsResult, { opacity: 0, y: 10, duration: 0.4 });
+
+            // 等待一小段时间，让用户看清结果 (REMOVED)
+            // await new Promise(r => setTimeout(r, 1200));
+
+            return { value: yaoValue, changes: changes, info: yaoInfo };
+        },
+
+        animateFinalHexagramFormation: async function(yaoInfos) {
+            const finalStalks = Array.from(this.elements.stalksWrapper.querySelectorAll('.stalk')).filter(s => gsap.getProperty(s, "opacity") > 0);
+            const flyingHexagram = document.createElement('div');
+            flyingHexagram.style.position = 'absolute';
+            flyingHexagram.style.display = 'flex';
+            flyingHexagram.style.flexDirection = 'column-reverse';
+            yaoInfos.forEach(info => {
+                const yaoEl = this.createYaoElement(info);
+                flyingHexagram.appendChild(yaoEl);
+            });
+            this.elements.stalksWrapper.appendChild(flyingHexagram);
+            flyingHexagram.style.opacity = 0;
+            const tl = gsap.timeline();
+            tl.to(this.elements.yaoStatsContainer, { opacity: 0, duration: 0.3 });
+            tl.to(finalStalks, { x: 0, y: 0, opacity: 0, scale: 0, duration: 0.8, stagger: 0.02, ease: 'power2.in' }, "<");
+            tl.to(flyingHexagram, { opacity: 1, duration: 0.5 }, '-=0.5');
+            const viewportCenterX = window.innerWidth / 2;
+            const viewportCenterY = window.innerHeight / 2;
+            const wrapperRect = this.elements.stalksWrapper.getBoundingClientRect();
+            tl.to(flyingHexagram, { x: viewportCenterX - wrapperRect.left - wrapperRect.width / 2, y: viewportCenterY - wrapperRect.top - wrapperRect.height / 2, scale: 0, opacity: 0, duration: 1.2, ease: 'power3.in' }, '+=0.5');
+            await new Promise(resolve => tl.eventCallback('onComplete', resolve));
+        },
+
+        runYarrowDivination: async function() {
+            this.elements.interactiveContainer.classList.add('visible');
+            this.elements.yaoStatsContainer.style.opacity = 0;
+            this.state.divinationData = [];
+            const originalYaoValues = [];
+            const originalYaoInfos = [];
+            const yaoNames = ['初', '二', '三', '四', '五', '上'];
+            for (let i = 0; i < 6; i++) {
+                this.elements.interactionPrompt.textContent = `求 ${yaoNames[i]} 爻`;
+                await new Promise(r => setTimeout(r, 500));
+                const yaoResult = await this.generateYaoInteractively();
+                originalYaoValues.push(yaoResult.value);
+                originalYaoInfos.push(yaoResult.info);
+                this.state.divinationData.push(yaoResult);
+            }
+            this.elements.interactionPrompt.textContent = '卦象生成...';
+            await this.animateFinalHexagramFormation(originalYaoInfos);
+            this.elements.interactiveContainer.classList.remove('visible');
+            return originalYaoValues;
+        },
+
+        runRandomDivination: async function() {
+            this.state.divinationData = [];
+            const originalYaoValues = [];
+            for (let i = 0; i < 6; i++) {
+                let sticks = 49;
+                const changes = [];
+                for (let j = 0; j < 3; j++) {
+                    const randomRatio = 0.3 + Math.random() * 0.4;
+                    const changeResult = this.performChangeWithInteraction(sticks, randomRatio);
+                    sticks = changeResult.remaining;
+                    changes.push(changeResult);
+                }
+                const yaoValue = sticks / 4;
+                originalYaoValues.push(yaoValue);
+                this.state.divinationData.push({ value: yaoValue, changes: changes, info: this.getYaoInfo(yaoValue) });
+            }
+            return originalYaoValues;
+        },
+
+        startDivination: async function() {
+            if (this.state.isMobile && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try { await DeviceOrientationEvent.requestPermission(); } catch (error) { console.error('陀螺仪权限请求失败:', error); }
+            }
+            this.elements.divineButton.disabled = true;
+            this.elements.divineButton.innerHTML = '推演中...<span class="loader"></span>';
+            this.elements.resultContainer.style.display = 'none';
+            this.elements.originalHexagram.innerHTML = '';
+            this.elements.changedHexagram.innerHTML = '';
+            gsap.to(this.elements.mainContainer, { opacity: 0, duration: 0.5 });
+            document.body.classList.add('divining');
+            let originalYaoValues;
+            if (this.state.divinationMethod === 'yarrow') {
+                originalYaoValues = await this.runYarrowDivination();
+            } else {
+                originalYaoValues = await this.runRandomDivination();
+            }
+            document.body.classList.remove('divining');
+            this.displayHexagrams(originalYaoValues);
+            this.displayInterpretations(originalYaoValues);
+            this.elements.introSection.style.display = 'none';
+            this.elements.divineButton.parentElement.style.display = 'none';
+            this.elements.resultContainer.style.display = 'block';
+            gsap.to(this.elements.mainContainer, { opacity: 1, duration: 0.5 });
+            this.setupResultActions();
+        },
+
+        setupResultActions: function() {
+            this.elements.resultActionsWrapper.innerHTML = '';
+            const interpButton = document.createElement('button');
+            interpButton.id = 'interp-button';
+            interpButton.textContent = '卦象解释';
+            interpButton.addEventListener('click', (e) => {
+                this.addGlowEffect(e.currentTarget);
+                this.showInterpretationModal();
+            });
+            this.elements.resultActionsWrapper.appendChild(interpButton);
+            const resetButton = document.createElement('button');
+            resetButton.id = 'reset-button';
+            resetButton.textContent = '再算一卦';
+            resetButton.addEventListener('click', (e) => {
+                this.addGlowEffect(e.currentTarget);
+                this.elements.resultContainer.style.display = 'none';
+                this.elements.introSection.style.display = 'block';
+                this.elements.divineButton.parentElement.style.display = 'flex';
+                this.elements.divineButton.innerHTML = '开始卜卦';
+                this.elements.divineButton.disabled = false;
+                this.state.isCalibrated = false;
+            });
+            this.elements.resultActionsWrapper.appendChild(resetButton);
+        },
+
+        showInterpretationModal: function() {
+            const { currentOriginalHexKey, currentChangedHexKey } = this.state;
+            const originalData = HEXAGRAM_DATA[currentOriginalHexKey];
+            const changedData = currentChangedHexKey ? HEXAGRAM_DATA[currentChangedHexKey] : null;
+
+            if (!originalData) return;
+
+            const tabOriginal = document.getElementById('tab-original');
+            const tabChanged = document.getElementById('tab-changed');
+            const contentOriginal = document.getElementById('content-original');
+            const contentChanged = document.getElementById('content-changed');
+
+            // Use innerHTML to render bold tags
+            contentOriginal.innerHTML = originalData.interpretation;
+            tabOriginal.textContent = `本卦：${originalData.name}`;
+
+            if (changedData) {
+                // Use innerHTML to render bold tags
+                contentChanged.innerHTML = changedData.interpretation;
+                tabChanged.textContent = `变卦：${changedData.name}`;
+                tabChanged.style.display = 'inline-block';
+            } else {
+                tabChanged.style.display = 'none';
+            }
+
+            tabOriginal.classList.add('active');
+            contentOriginal.classList.add('active');
+            tabChanged.classList.remove('active');
+            contentChanged.classList.remove('active');
+
+            this.elements.interpretationModalOverlay.classList.add('visible');
+        },
+
+        getYaoInfo: function(value) {
+             switch (value) {
+                case 6: return { type: 'yin', isChanging: true, binary: '0', symbol: '×' };
+                case 7: return { type: 'yang', isChanging: false, binary: '1', symbol: '' };
+                case 8: return { type: 'yin', isChanging: false, binary: '0', symbol: '' };
+                case 9: return { type: 'yang', isChanging: true, binary: '1', symbol: '×' };
+                default: return { type: 'error', isChanging: false, binary: '', symbol: '' };
+            }
+        },
+        
+        getChangedYaoValue: function(value) {
+            if (value === 6) return 7;
+            if (value === 9) return 8;
+            return value;
+        },
+
+        createYaoElement: function(info) {
+            const yaoDiv = document.createElement('div');
+            yaoDiv.className = `yao yao-${info.type}`;
+            if(info.type === 'placeholder') return yaoDiv;
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute("viewBox", "0 0 100 10"); 
+            svg.setAttribute("preserveAspectRatio", "none");
+            if (info.type === 'yang') {
+                const line = document.createElementNS(svgNS, "line");
+                line.setAttribute("x1", "0"); line.setAttribute("y1", "5"); line.setAttribute("x2", "100"); line.setAttribute("y2", "5");
+                line.setAttribute("stroke-width", "10");
+                svg.appendChild(line);
+            } else if (info.type === 'yin') {
+                const line1 = document.createElementNS(svgNS, "line");
+                line1.setAttribute("x1", "0"); line1.setAttribute("y1", "5"); line1.setAttribute("x2", "40"); line1.setAttribute("y2", "5");
+                line1.setAttribute("stroke-width", "10");
+                svg.appendChild(line1);
+                const line2 = document.createElementNS(svgNS, "line");
+                line2.setAttribute("x1", "60"); line2.setAttribute("y1", "5"); line2.setAttribute("x2", "100"); line2.setAttribute("y2", "5");
+                line2.setAttribute("stroke-width", "10");
+                svg.appendChild(line2);
+            }
+            yaoDiv.appendChild(svg);
+            if (info.isChanging) {
+                yaoDiv.classList.add('yao-changing');
+                const symbol = document.createElement('div');
+                symbol.className = 'yao-changing-symbol';
+                symbol.textContent = info.symbol;
+                yaoDiv.appendChild(symbol);
+            }
+            return yaoDiv;
+        },
+
+        displayHexagrams: function(originalYaoValues) {
+            this.elements.originalHexagram.innerHTML = '';
+            this.elements.changedHexagram.innerHTML = '';
+            originalYaoValues.forEach(value => {
+                this.elements.originalHexagram.appendChild(this.createYaoElement(this.getYaoInfo(value)));
+                this.elements.changedHexagram.appendChild(this.createYaoElement(this.getYaoInfo(this.getChangedYaoValue(value))));
+            });
+            gsap.from(this.elements.originalHexagram.children, { opacity: 0, stagger: 0.1 });
+            gsap.from(this.elements.changedHexagram.children, { opacity: 0, stagger: 0.1 });
+        },
+
+        displayInterpretations: function(originalYaoValues) {
+            const originalBinary = [...originalYaoValues].map(v => this.getYaoInfo(v).binary).reverse().join('');
+            const changedBinary = [...originalYaoValues].map(v => this.getYaoInfo(this.getChangedYaoValue(v)).binary).reverse().join('');
+            
+            this.state.currentOriginalHexKey = originalBinary;
+            this.state.currentChangedHexKey = originalBinary !== changedBinary ? changedBinary : null;
+
+            const originalHexData = HEXAGRAM_DATA[originalBinary] || { name: '未知' };
+            const changedHexData = HEXAGRAM_DATA[changedBinary] || { name: '未知' };
+            this.elements.originalHexagramName.textContent = `${originalHexData.name}卦`;
+            gsap.from(this.elements.originalHexagramName, { opacity: 0, y: 10, duration: 0.5, ease: 'power1.out' });
+            if (originalBinary !== changedBinary) {
+                this.elements.changedHexagramContainer.style.display = 'flex';
+                this.elements.changedHexagramName.textContent = `${changedHexData.name}卦`;
+                gsap.from(this.elements.changedHexagramName, { opacity: 0, y: 10, duration: 0.5, ease: 'power1.out' });
+            } else {
+                this.elements.changedHexagramContainer.style.display = 'none';
+                this.elements.changedHexagramName.textContent = '';
+            }
+        },
+
+        initParallax: function() {
+            const container = this.elements.mainContainer;
+            const sensitivity = 25;
+            if (this.state.isMobile) {
+                window.addEventListener('deviceorientation', (e) => {
+                    const { beta, gamma } = e;
+                    if (beta === null || gamma === null) return;
+                    if (!this.state.isCalibrated) {
+                        this.state.baseBeta = beta;
+                        this.state.baseGamma = gamma;
+                        this.state.isCalibrated = true;
+                    }
+                    const deltaBeta = beta - this.state.baseBeta;
+                    const deltaGamma = gamma - this.state.baseGamma;
+                    const yOffset = gsap.utils.clamp(-45, 45, deltaBeta) / 45; 
+                    const xOffset = gsap.utils.clamp(-45, 45, deltaGamma) / 45;
+                    gsap.to(container, { duration: 0.5, rotationY: xOffset * sensitivity, rotationX: -yOffset * sensitivity, ease: "power1.out" });
+                });
+            } else {
+                window.addEventListener('mousemove', (e) => {
+                    const { clientX, clientY } = e;
+                    const { innerWidth, innerHeight } = window;
+                    const xOffset = (clientX / innerWidth - 0.5) * 2;
+                    const yOffset = (clientY / innerHeight - 0.5) * 2;
+                    gsap.to(container, { duration: 0.8, rotationY: xOffset * 7, rotationX: -yOffset * 7, ease: "power1.out" });
+                });
+            }
+        },
+
+        addGlowEffect: function(button) {
+            const glow = document.createElement('div');
+            glow.className = 'button-glow-effect';
+            button.appendChild(glow);
+            setTimeout(() => glow.remove(), 600);
+        },
+
+        init: function() {
+            this.elements.methodToggle.addEventListener('change', (e) => {
+                this.state.divinationMethod = e.target.checked ? 'yarrow' : 'random';
+                this.elements.labelYarrow.style.opacity = e.target.checked ? 1 : 0.7;
+                this.elements.labelRandom.style.opacity = e.target.checked ? 0.7 : 1;
+            });
+
+            this.elements.divineButton.addEventListener('click', (e) => {
+                this.addGlowEffect(e.currentTarget);
+                this.startDivination();
+            });
+
+            // 弹窗事件监听
+            this.elements.interpretationModalOverlay.addEventListener('click', (e) => {
+                if (e.target === this.elements.interpretationModalOverlay) {
+                    this.elements.interpretationModalOverlay.classList.remove('visible');
+                }
+            });
+            document.getElementById('modal-close-btn').addEventListener('click', () => {
+                this.elements.interpretationModalOverlay.classList.remove('visible');
+            });
+            document.getElementById('tab-original').addEventListener('click', () => {
+                document.getElementById('tab-original').classList.add('active');
+                document.getElementById('content-original').classList.add('active');
+                document.getElementById('tab-changed').classList.remove('active');
+                document.getElementById('content-changed').classList.remove('active');
+            });
+            document.getElementById('tab-changed').addEventListener('click', () => {
+                document.getElementById('tab-original').classList.remove('active');
+                document.getElementById('content-original').classList.remove('active');
+                document.getElementById('tab-changed').classList.add('active');
+                document.getElementById('content-changed').classList.add('active');
+            });
+
+            this.initParallax();
+        }
+    };
+
+    window.onload = () => {
+        app.init();
+        gsap.globalTimeline.timeScale(2.8);
+    };
+    </script>
+</body>
+</html>
