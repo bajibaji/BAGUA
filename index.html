@@ -184,12 +184,6 @@
         #interactive-animation-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,6.6);
-            /* [FIX] 移除了 backdrop-filter 属性.
-              这个属性在老旧的 iOS 设备上可能导致渲染问题和性能瓶颈。
-              移除后可以保证在所有设备上都有稳定一致的显示效果。
-            */
-            /* backdrop-filter: blur(5px); */
-            /* -webkit-backdrop-filter: blur(5px); */
             z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
@@ -205,19 +199,7 @@
         .stalk {
             position: absolute; width: 2px; height: 100px;
             background-color: var(--stalk-color); border-radius: 1px;
-            /* [OPTIMIZATION] 
-              Removed `box-shadow` from the animated stalks. 
-              This significantly reduces the browser's rendering workload during animation,
-              leading to smoother performance, especially on mobile devices.
-            */
-            /* box-shadow: 0 0 5px var(--glow-color); */
             transform-origin: bottom center;
-            /* [OPTIMIZATION] 
-              Added `will-change`. This property hints to the browser that the transform and opacity
-              of this element are likely to change. The browser can then optimize for these
-              changes in advance, often by promoting the element to its own layer and handling
-              the animation on the GPU, which is much more efficient.
-            */
             will-change: transform, opacity;
         }
 
@@ -252,7 +234,7 @@
         #interpretation-modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7); 
-            backdrop-filter: blur(5px);  /* 同样可以在这里移除以提升兼容性 */
+            backdrop-filter: blur(5px);
             z-index: 200; display: flex; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
@@ -397,9 +379,6 @@
     </div>
 
     <script>
-    // 卦象数据对象，增加了 interpretation 字段
-    
-
     const app = {
         elements: {
             divineButton: document.getElementById('divine-button'),
@@ -428,6 +407,7 @@
             divinationData: [],
             isMobile: /Mobi|Android/i.test(navigator.userAgent),
             divinationMethod: 'yarrow',
+            isParallaxActive: true, // [MODIFIED] 新增状态：控制视差效果是否激活
             isCalibrated: false,
             baseBeta: 0,
             baseGamma: 0,
@@ -530,9 +510,6 @@
             this.elements.yaoStatsResult.textContent = `本爻蓍草: ${yaoValue * 4} 根`;
             gsap.from(this.elements.yaoStatsResult, { opacity: 0, y: 10, duration: 0.4 });
 
-            // 等待一小段时间，让用户看清结果 (REMOVED)
-            // await new Promise(r => setTimeout(r, 1200));
-
             return { value: yaoValue, changes: changes, info: yaoInfo };
         },
 
@@ -608,6 +585,13 @@
             this.elements.resultContainer.style.display = 'none';
             this.elements.originalHexagram.innerHTML = '';
             this.elements.changedHexagram.innerHTML = '';
+
+            // [MODIFIED] 如果是大衍筮法，则暂停视差效果并重置窗口位置
+            if (this.state.divinationMethod === 'yarrow') {
+                this.state.isParallaxActive = false;
+                gsap.to(this.elements.mainContainer, { duration: 0.5, rotationY: 0, rotationX: 0, ease: "power1.out" });
+            }
+
             gsap.to(this.elements.mainContainer, { opacity: 0, duration: 0.5 });
             document.body.classList.add('divining');
             let originalYaoValues;
@@ -616,6 +600,11 @@
             } else {
                 originalYaoValues = await this.runRandomDivination();
             }
+
+            // [MODIFIED] 推演结束后，重新激活视差效果
+            this.state.isParallaxActive = true;
+            this.state.isCalibrated = false; // 强制重新校准陀螺仪基准，以获得平滑的过渡
+
             document.body.classList.remove('divining');
             this.displayHexagrams(originalYaoValues);
             this.displayInterpretations(originalYaoValues);
@@ -663,12 +652,10 @@
             const contentOriginal = document.getElementById('content-original');
             const contentChanged = document.getElementById('content-changed');
 
-            // Use innerHTML to render bold tags
             contentOriginal.innerHTML = originalData.interpretation;
             tabOriginal.textContent = `本卦：${originalData.name}`;
 
             if (changedData) {
-                // Use innerHTML to render bold tags
                 contentChanged.innerHTML = changedData.interpretation;
                 tabChanged.textContent = `变卦：${changedData.name}`;
                 tabChanged.style.display = 'inline-block';
@@ -771,6 +758,9 @@
             const sensitivity = 25;
             if (this.state.isMobile) {
                 window.addEventListener('deviceorientation', (e) => {
+                    // [MODIFIED] 如果视差效果暂停，则不执行任何操作
+                    if (!this.state.isParallaxActive) return;
+
                     const { beta, gamma } = e;
                     if (beta === null || gamma === null) return;
                     if (!this.state.isCalibrated) {
@@ -786,6 +776,9 @@
                 });
             } else {
                 window.addEventListener('mousemove', (e) => {
+                    // [MODIFIED] 如果视差效果暂停，则不执行任何操作 (为保持一致性)
+                    if (!this.state.isParallaxActive) return;
+
                     const { clientX, clientY } = e;
                     const { innerWidth, innerHeight } = window;
                     const xOffset = (clientX / innerWidth - 0.5) * 2;
@@ -841,7 +834,13 @@
     };
 
     window.onload = () => {
-        app.init();
+        // 确保在 data.js 加载完毕后初始化
+        if (typeof HEXAGRAM_DATA !== 'undefined') {
+            app.init();
+        } else {
+            // 如果 data.js 延迟加载，设置一个短延时
+            setTimeout(() => app.init(), 100);
+        }
         gsap.globalTimeline.timeScale(2.2);
     };
     </script>
