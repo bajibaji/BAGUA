@@ -183,7 +183,14 @@
         
         #interactive-animation-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 100;
+            background: rgba(0,0,0,6.6);
+            /* [FIX] 移除了 backdrop-filter 属性.
+              这个属性在老旧的 iOS 设备上可能导致渲染问题和性能瓶颈。
+              移除后可以保证在所有设备上都有稳定一致的显示效果。
+            */
+            /* backdrop-filter: blur(5px); */
+            /* -webkit-backdrop-filter: blur(5px); */
+            z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
         }
@@ -244,7 +251,8 @@
         /* --- 解释弹窗样式 --- */
         #interpretation-modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+            background: rgba(0,0,0,0.7); 
+            backdrop-filter: blur(5px);  /* 同样可以在这里移除以提升兼容性 */
             z-index: 200; display: flex; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
