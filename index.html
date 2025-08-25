@@ -198,7 +198,20 @@
         .stalk {
             position: absolute; width: 2px; height: 100px;
             background-color: var(--stalk-color); border-radius: 1px;
-            box-shadow: 0 0 5px var(--glow-color); transform-origin: bottom center;
+            /* [OPTIMIZATION] 
+              Removed `box-shadow` from the animated stalks. 
+              This significantly reduces the browser's rendering workload during animation,
+              leading to smoother performance, especially on mobile devices.
+            */
+            /* box-shadow: 0 0 5px var(--glow-color); */
+            transform-origin: bottom center;
+            /* [OPTIMIZATION] 
+              Added `will-change`. This property hints to the browser that the transform and opacity
+              of this element are likely to change. The browser can then optimize for these
+              changes in advance, often by promoting the element to its own layer and handling
+              the animation on the GPU, which is much more efficient.
+            */
+            will-change: transform, opacity;
         }
 
         #yao-stats-container {
