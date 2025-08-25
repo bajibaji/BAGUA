@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>在线卜卦 (Canvas 优化版)</title>
+    <title>在线卜卦 (优化版)</title>
     
     <!-- 引入 GSAP 动画库 -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-    <!-- 引入分离出的卦象数据 -->
     <script src="data.js" defer></script>
-    
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
 
         :root {
             --bg-color: #1a1a1a;
-            --container-bg: rgba(44, 44, 44, 0.15);
+            --container-bg: rgba(44, 44, 44, 0.55);
             --primary-text: #e0e0e0;
             --title-color: #d4af37;
             --border-color: #444;
@@ -49,8 +48,8 @@
             position: fixed;
             top: 50%;
             left: 50%;
-            width: 65vmax;
-            height: 65vmax;
+            width: 80vmax;
+            height: 80vmax;
             transform: translate(-50%, -50%);
             z-index: -1;
             opacity: 0.08;
@@ -159,6 +158,7 @@
         button:active:not(:disabled) { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
 
+        /* --- 单独设置卦象解释按钮颜色 --- */
         #interp-button {
             background-color: #c93756; /* 朱红色 */
         }
@@ -183,88 +183,31 @@
         
         #interactive-animation-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 100;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
         }
         #interactive-animation-container.visible { opacity: 1; pointer-events: all; }
         #interaction-prompt { color: var(--title-color); font-size: 1.5em; margin-bottom: 20px; text-shadow: 0 0 10px var(--glow-color); min-height: 1.5em;}
-        
-        #canvas-wrapper {
+        #stalks-wrapper {
             width: 80%; max-width: 500px; height: 150px;
+            display: flex; justify-content: center; align-items: center;
             cursor: pointer; border: 2px dashed var(--border-color); border-radius: 10px;
-            position: relative;
+            padding: 10px; position: relative;
         }
-        #stalk-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none; 
+        .stalk {
+            position: absolute; width: 2px; height: 100px;
+            background-color: var(--stalk-color); border-radius: 1px;
+            box-shadow: 0 0 5px var(--glow-color); transform-origin: bottom center;
         }
 
         #yao-stats-container {
-            position: fixed;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 400px;
-            background: rgba(0, 0, 0, 0.75);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            opacity: 0;
-            color: var(--primary-text);
-            cursor: pointer;
-            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-            overflow: hidden;
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
+            background: rgba(0,0,0,0.5); border-radius: 8px; padding: 10px; border: 1px solid var(--border-color);
+            display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0;
+            transition: opacity 0.5s ease; color: var(--primary-text);
         }
-
-        #yao-stats-container.collapsed {
-            max-height: 50px;
-        }
-
-        #yao-stats-container:not(.collapsed) {
-            max-height: 500px; 
-        }
-
-        .yao-stats-title { 
-            padding: 12px;
-            box-sizing: border-box;
-            width: 100%;
-            justify-content: center;
-            font-size: 1em; 
-            color: var(--title-color); 
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .yao-stats-title::before {
-            content: '▲';
-            font-size: 0.8em;
-            transition: transform 0.4s ease;
-        }
-        #yao-stats-container.collapsed .yao-stats-title::before {
-            transform: rotate(180deg);
-        }
-        .yao-stats-content {
-            padding: 0 15px 15px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-            transition: opacity 0.2s ease;
-        }
-        #yao-stats-container.collapsed .yao-stats-content {
-            opacity: 0;
-            pointer-events: none;
-        }
-
+        .yao-stats-title { font-size: 1em; color: var(--title-color); font-weight: bold; }
         .yao-stats-changes { display: flex; justify-content: center; gap: 10px; width: 100%; }
         .change-stat { background: rgba(255,255,255,0.1); padding: 5px 8px; border-radius: 4px; font-size: 0.8em; text-align: center; }
         .change-stat .label { font-size: 0.9em; opacity: 0.7; }
@@ -285,10 +228,10 @@
         .yao.yao-changing svg line { stroke: var(--changing-yao-color); }
         .yao-changing-symbol { position: absolute; right: -25px; top: 50%; transform: translateY(-50%); font-size: 1.2em; color: var(--changing-yao-color); font-weight: bold; }
         
+        /* --- 解释弹窗样式 --- */
         #interpretation-modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); 
-            backdrop-filter: blur(5px);
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
             z-index: 200; display: flex; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
@@ -315,28 +258,6 @@
         .tab-content.active { display: block; animation: contentFadeIn 0.5s ease; }
         @keyframes contentFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        #final-yao-animation-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-            opacity: 0;
-            background: rgba(0,0,0,0.7);
-        }
-        #final-yao-lines {
-            display: flex;
-            flex-direction: column-reverse;
-        }
-        #final-yao-lines .yao {
-            width: 200px;
-            height: 35px;
-            margin: 12px 0;
-        }
-
         @media (max-width: 768px) {
             body { align-items: center; padding: 0; }
             .container { padding: 15px; margin: 0 2.5%; width: 95%; border-radius: 8px; overflow: auto; }
@@ -345,21 +266,13 @@
             .hexagram { flex: 1; min-width: 0; padding: 0 5px; }
             .hexagram h3 { font-size: 1em; margin-bottom: 6px; }
             .hexagram-name { font-size: 1.1em; margin-top: 6px; word-break: break-all; }
-            .yao { width: 100%; max-width: 200px; height: 14px; margin: 3px auto; }
+            .yao { width: 100%; max-width: 80px; height: 14px; margin: 3px auto; }
             .yao svg { height: 3px; }
             .yao-changing-symbol { font-size: 0.8em; right: -16px;}
-            #yao-stats-container { 
-                padding: 8px; 
-                gap: 5px; 
-            }
+            #yao-stats-container { padding: 8px; gap: 5px; }
             .change-stat { font-size: 0.7em; padding: 4px 6px; }
             .yao-stats-result { font-size: 1em; }
             button { font-size: 1em; padding: 10px 18px; }
-            #final-yao-lines .yao {
-                width: 150px;
-                height: 25px;
-                margin: 8px 0;
-            }
         }
     </style>
 </head>
@@ -397,7 +310,6 @@
             </g>
         </svg>
     </div>
-
     <div class="container" id="main-container">
         <div id="intro-section">
             <h1>大衍筮法 在线卜卦</h1>
@@ -431,28 +343,22 @@
                     <div id="changed-hexagram-name" class="hexagram-name"></div>
                 </div>
             </div>
+            <!-- 结果页按钮容器 -->
             <div id="result-actions-wrapper" class="button-wrapper"></div>
         </div>
     </div>
     
     <div id="interactive-animation-container">
         <div id="interaction-prompt"></div>
-        <div id="canvas-wrapper">
-        </div>
-        <canvas id="stalk-canvas"></canvas>
-        <div id="yao-stats-container" class="collapsed">
+        <div id="stalks-wrapper"></div>
+        <div id="yao-stats-container">
             <div class="yao-stats-title">本爻演算</div>
-            <div class="yao-stats-content">
-                <div id="yao-stats-changes" class="yao-stats-changes"></div>
-                <div id="yao-stats-result" class="yao-stats-result"></div>
-            </div>
+            <div id="yao-stats-changes" class="yao-stats-changes"></div>
+            <div id="yao-stats-result" class="yao-stats-result"></div>
         </div>
     </div>
 
-    <div id="final-yao-animation-overlay">
-        <div id="final-yao-lines"></div>
-    </div>
-
+    <!-- 解释弹窗 HTML -->
     <div id="interpretation-modal-overlay">
         <div id="interpretation-modal">
             <div id="modal-header">
@@ -470,16 +376,15 @@
     </div>
 
     <script>
-    // 注意: 卦象数据 HEXAGRAM_DATA 现在从 data.js 文件加载
+    // 卦象数据对象，增加了 interpretation 字段
     
+
     const app = {
-        // 集中管理所有DOM元素的引用
         elements: {
             divineButton: document.getElementById('divine-button'),
             interactiveContainer: document.getElementById('interactive-animation-container'),
             interactionPrompt: document.getElementById('interaction-prompt'),
-            canvasWrapper: document.getElementById('canvas-wrapper'),
-            canvas: document.getElementById('stalk-canvas'),
+            stalksWrapper: document.getElementById('stalks-wrapper'),
             resultContainer: document.getElementById('result-container'),
             originalHexagram: document.getElementById('original-hexagram'),
             changedHexagram: document.getElementById('changed-hexagram'),
@@ -496,75 +401,19 @@
             yaoStatsResult: document.getElementById('yao-stats-result'),
             resultActionsWrapper: document.getElementById('result-actions-wrapper'),
             interpretationModalOverlay: document.getElementById('interpretation-modal-overlay'),
-            finalYaoAnimationOverlay: document.getElementById('final-yao-animation-overlay'),
-            finalYaoLines: document.getElementById('final-yao-lines'),
         },
         
-        // 存储应用的状态
         state: {
             divinationData: [],
             isMobile: /Mobi|Android/i.test(navigator.userAgent),
-            divinationMethod: 'yarrow', // 默认为大衍筮法
-            isCalibrated: false, // 用于陀螺仪校准
+            divinationMethod: 'yarrow',
+            isCalibrated: false,
             baseBeta: 0,
             baseGamma: 0,
             currentOriginalHexKey: null,
             currentChangedHexKey: null,
-            canvasContext: null,
-            stalks: [], // 存储所有蓍草对象
-            animationRunning: false, // 动画循环是否在运行
         },
 
-        // --- Canvas 动画逻辑 ---
-
-        // 初始化Canvas，设置高DPI显示
-        setupCanvas: function() {
-            this.state.canvasContext = this.elements.canvas.getContext('2d');
-            const dpr = window.devicePixelRatio || 1;
-            this.elements.canvas.width = window.innerWidth * dpr;
-            this.elements.canvas.height = window.innerHeight * dpr;
-            this.state.canvasContext.scale(dpr, dpr);
-        },
-
-        // 创建一个蓍草对象，用于Canvas渲染
-        createStalk: function(x, y, rotation, width, height) {
-            return { x, y, rotation, width, height, alpha: 1, scale: 1 };
-        },
-
-        // 绘制所有蓍草到Canvas上
-        drawStalks: function() {
-            if (!this.state.animationRunning) return;
-            
-            const ctx = this.state.canvasContext;
-            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--stalk-color');
-            
-            this.state.stalks.forEach(stalk => {
-                ctx.save();
-                ctx.globalAlpha = stalk.alpha;
-                ctx.translate(stalk.x, stalk.y);
-                ctx.rotate(stalk.rotation * Math.PI / 180);
-                ctx.scale(stalk.scale, stalk.scale);
-                ctx.fillRect(-stalk.width / 2, -stalk.height / 2, stalk.width, stalk.height);
-                ctx.restore();
-            });
-        },
-
-        // 启动GSAP的ticker来持续调用绘制函数，形成动画
-        startAnimationLoop: function() {
-            this.state.animationRunning = true;
-            gsap.ticker.add(this.drawStalks.bind(this));
-        },
-
-        // 停止动画循环
-        stopAnimationLoop: function() {
-            this.state.animationRunning = false;
-            gsap.ticker.remove(this.drawStalks.bind(this));
-        },
-        
-        // --- 核心算法与交互 ---
-
-        // 根据用户点击位置，执行一次“变”的操作
         performChangeWithInteraction: function(totalSticks, clickRatio) {
             if (totalSticks <= 1) return { total: totalSticks, left: totalSticks, right: 0, leftRem: totalSticks, rightRem: 0, removed: 0, remaining: totalSticks };
             let leftPile = Math.round(totalSticks * clickRatio);
@@ -581,112 +430,70 @@
             return { total: totalSticks, left: leftPile, right: rightPile, leftRem: leftRemainder, rightRem: rightRemainder, removed: totalRemoved, remaining: remainingSticks };
         },
         
-        // 获取用户交互以完成一次“变”，并播放动画
-        getChangeFromUser: function(totalSticks, changeName, boxRect) {
+        getChangeFromUser: function(totalSticks, changeName) {
             return new Promise(resolve => {
                 this.elements.interactionPrompt.textContent = `第 ${changeName} 变，请点击分蓍草`;
-                
-                this.state.stalks = [];
-                const stalkWidth = 2;
-                const stalkHeight = 100;
-
+                this.elements.stalksWrapper.innerHTML = '';
+                const stalks = [];
                 for (let i = 0; i < totalSticks; i++) {
-                    const stalk = this.createStalk(0, 0, 0, stalkWidth, stalkHeight);
-                    this.state.stalks.push(stalk);
+                    const stalk = document.createElement('div');
+                    stalk.className = 'stalk';
+                    this.elements.stalksWrapper.appendChild(stalk);
+                    stalks.push(stalk);
                 }
-
-                gsap.fromTo(this.state.stalks, 
-                    { x: boxRect.left + boxRect.width / 2, y: boxRect.top + boxRect.height / 2, rotation: 0 }, 
-                    { 
-                        x: (i) => (boxRect.left + boxRect.width / 2) + (i - totalSticks / 2) * (boxRect.width * 0.8 / totalSticks),
-                        y: () => boxRect.top + boxRect.height / 2 + (Math.random() - 0.5) * 10,
-                        rotation: () => (Math.random() - 0.5) * 15,
-                        duration: 0.5, 
-                        ease: 'power2.out' 
-                    }
-                );
+                gsap.fromTo(stalks, { x: 0, y: 0, rotation: 0 }, { x: (i) => (i - totalSticks / 2) * (this.elements.stalksWrapper.offsetWidth * 0.8 / totalSticks), y: () => (Math.random() - 0.5) * 10, rotation: () => (Math.random() - 0.5) * 15, duration: 0.5, ease: 'power2.out' });
                 
                 const clickHandler = (e) => {
-                    this.elements.canvasWrapper.removeEventListener('click', clickHandler);
-                    this.elements.canvasWrapper.style.cursor = 'default';
+                    this.elements.stalksWrapper.removeEventListener('click', clickHandler);
+                    this.elements.stalksWrapper.style.cursor = 'default';
                     
-                    const clickX = e.clientX - boxRect.left;
-                    const clickRatio = clickX / boxRect.width;
+                    const rect = this.elements.stalksWrapper.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const clickRatio = clickX / rect.width;
                     const changeResult = this.performChangeWithInteraction(totalSticks, clickRatio);
                     
                     this.elements.interactionPrompt.textContent = `天: ${changeResult.left}, 地: ${changeResult.right}`;
 
                     const tl = gsap.timeline({ onComplete: () => resolve(changeResult) });
-                    const leftStalks = this.state.stalks.slice(0, changeResult.left);
-                    const rightStalks = this.state.stalks.slice(changeResult.left);
+                    const leftStalks = stalks.slice(0, changeResult.left);
+                    const rightStalks = stalks.slice(changeResult.left);
 
                     tl.to(leftStalks, { x: '-=100', rotation: -20, duration: 0.3, ease: 'power2.inOut', stagger: 0.005 });
                     tl.to(rightStalks, { x: '+=100', rotation: 20, duration: 0.3, ease: 'power2.inOut', stagger: 0.005 }, '<');
-                    
                     const heldStalk = rightStalks.pop();
-                    tl.to(heldStalk, { y: '-=80', x: '+=20', rotation: 15, duration: 0.3, ease: 'power2.out' }, '-=0.2');
-                    
+                    tl.to(heldStalk, { y: -80, x: '+=20', rotation: 15, duration: 0.3, ease: 'power2.out' }, '-=0.2');
                     const leftRemainderStalks = leftStalks.slice(0, changeResult.leftRem);
                     const rightRemainderStalks = rightStalks.slice(0, changeResult.rightRem);
-                    
                     const nonRemainderLeft = leftStalks.filter(s => !leftRemainderStalks.includes(s));
                     const nonRemainderRight = rightStalks.filter(s => !rightRemainderStalks.includes(s));
-                    
-                    tl.to([...nonRemainderLeft, ...nonRemainderRight], { alpha: 0.3, duration: 0.2 }, '+=0.1');
+                    tl.to([...nonRemainderLeft, ...nonRemainderRight], { opacity: 0.3, duration: 0.2 }, '+=0.1');
                     tl.to(leftRemainderStalks, { x: '-=30', scale: 1.2, duration: 0.3, ease: 'power2.out' }, '<');
                     tl.to(rightRemainderStalks, { x: '+=30', scale: 1.2, duration: 0.3, ease: 'power2.out' }, '<');
-                    
                     const allRemainders = [heldStalk, ...leftRemainderStalks, ...rightRemainderStalks];
-                    const centerX = boxRect.left + boxRect.width / 2;
-                    const centerY = boxRect.top + boxRect.height / 2;
-
-                    tl.to(allRemainders, {
-                        x: centerX,
-                        y: centerY - 40,
-                        rotation: () => (Math.random() - 0.5) * 30,
-                        duration: 0.5,
-                        ease: 'power2.out',
-                        stagger: 0.02
-                    }, "+=0.3");
-                    
-                    const statsRect = this.elements.yaoStatsContainer.getBoundingClientRect();
-                    const targetX = statsRect.left + statsRect.width / 2;
-                    const targetY = statsRect.top;
-
-                    tl.to(allRemainders, {
-                        x: targetX,
-                        y: targetY,
-                        alpha: 0,
-                        scale: 0.2, 
-                        duration: 0.8,
-                        ease: 'power1.in',
-                        stagger: {
-                            amount: 0.25,
-                            from: 'center'
-                        }
-                    });
-                    
-                    const remainingStalks = this.state.stalks.filter(s => !allRemainders.includes(s));
-                    tl.to(remainingStalks, { x: centerX, y: centerY, rotation: 0, alpha: 1, duration: 0.4, ease: 'power2.inOut' }, '-=0.5');
+                    const stalksWrapperRect = this.elements.stalksWrapper.getBoundingClientRect();
+                    const targetX = (window.innerWidth / 2) - (stalksWrapperRect.left + stalksWrapperRect.width / 2);
+                    const targetY = (window.innerHeight / 2) - (stalksWrapperRect.top + stalksWrapperRect.height / 2);
+                    tl.to(allRemainders, { x: targetX, y: targetY, scale: 1, duration: 0.5, stagger: 0.05, ease: 'power2.inOut' }, '+=0.3');
+                    tl.to(allRemainders, { y: `+=${window.innerHeight / 2 + 100}`, opacity: 0, duration: 0.6, stagger: 0.03, ease: 'power2.in' });
+                    const remainingStalks = stalks.filter(s => !allRemainders.includes(s));
+                    tl.to(remainingStalks, { x: 0, rotation: 0, opacity: 1, duration: 0.4, ease: 'power2.inOut' }, '-=0.5');
                 };
-                this.elements.canvasWrapper.addEventListener('click', clickHandler);
-                this.elements.canvasWrapper.style.cursor = 'pointer';
+                this.elements.stalksWrapper.addEventListener('click', clickHandler);
+                this.elements.stalksWrapper.style.cursor = 'pointer';
             });
         },
 
-        // 通过三次“变”来生成一个爻
-        generateYaoInteractively: async function(boxRect) {
+        generateYaoInteractively: async function() {
             let sticks = 49;
             const changes = [];
             
             this.elements.yaoStatsChanges.innerHTML = '';
             this.elements.yaoStatsResult.innerHTML = '';
-            this.elements.yaoStatsContainer.classList.add('collapsed');
             gsap.to(this.elements.yaoStatsContainer, { opacity: 1, duration: 0.3 });
 
             for (let i = 0; i < 3; i++) {
                 const changeNames = ['一', '二', '三'];
-                const changeResult = await this.getChangeFromUser(sticks, changeNames[i], boxRect);
+                const changeResult = await this.getChangeFromUser(sticks, changeNames[i]);
                 sticks = changeResult.remaining;
                 changes.push(changeResult);
 
@@ -701,55 +508,57 @@
             
             this.elements.yaoStatsResult.textContent = `本爻蓍草: ${yaoValue * 4} 根`;
             gsap.from(this.elements.yaoStatsResult, { opacity: 0, y: 10, duration: 0.4 });
-            
+
+            // 等待一小段时间，让用户看清结果 (REMOVED)
+            // await new Promise(r => setTimeout(r, 1200));
+
             return { value: yaoValue, changes: changes, info: yaoInfo };
         },
 
-        // 最后一个爻生成后的收尾动画
-        animateFinalHexagramFormation: async function() {
+        animateFinalHexagramFormation: async function(yaoInfos) {
+            const finalStalks = Array.from(this.elements.stalksWrapper.querySelectorAll('.stalk')).filter(s => gsap.getProperty(s, "opacity") > 0);
+            const flyingHexagram = document.createElement('div');
+            flyingHexagram.style.position = 'absolute';
+            flyingHexagram.style.display = 'flex';
+            flyingHexagram.style.flexDirection = 'column-reverse';
+            yaoInfos.forEach(info => {
+                const yaoEl = this.createYaoElement(info);
+                flyingHexagram.appendChild(yaoEl);
+            });
+            this.elements.stalksWrapper.appendChild(flyingHexagram);
+            flyingHexagram.style.opacity = 0;
             const tl = gsap.timeline();
             tl.to(this.elements.yaoStatsContainer, { opacity: 0, duration: 0.3 });
-            tl.to(this.state.stalks, { 
-                alpha: 0, 
-                scale: 0, 
-                duration: 0.8, 
-                stagger: 0.02, 
-                ease: 'power2.in' 
-            }, "<");
+            tl.to(finalStalks, { x: 0, y: 0, opacity: 0, scale: 0, duration: 0.8, stagger: 0.02, ease: 'power2.in' }, "<");
+            tl.to(flyingHexagram, { opacity: 1, duration: 0.5 }, '-=0.5');
+            const viewportCenterX = window.innerWidth / 2;
+            const viewportCenterY = window.innerHeight / 2;
+            const wrapperRect = this.elements.stalksWrapper.getBoundingClientRect();
+            tl.to(flyingHexagram, { x: viewportCenterX - wrapperRect.left - wrapperRect.width / 2, y: viewportCenterY - wrapperRect.top - wrapperRect.height / 2, scale: 0, opacity: 0, duration: 1.2, ease: 'power3.in' }, '+=0.5');
             await new Promise(resolve => tl.eventCallback('onComplete', resolve));
         },
 
-        // --- 卜卦流程控制 ---
-
-        // 执行完整的大衍筮法流程
         runYarrowDivination: async function() {
-            this.setupCanvas();
-            this.startAnimationLoop();
             this.elements.interactiveContainer.classList.add('visible');
-            
-            await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 50))); 
-
-            const boxRect = this.elements.canvasWrapper.getBoundingClientRect();
-
             this.elements.yaoStatsContainer.style.opacity = 0;
             this.state.divinationData = [];
             const originalYaoValues = [];
+            const originalYaoInfos = [];
             const yaoNames = ['初', '二', '三', '四', '五', '上'];
             for (let i = 0; i < 6; i++) {
                 this.elements.interactionPrompt.textContent = `求 ${yaoNames[i]} 爻`;
-                await new Promise(r => setTimeout(r, 150));
-                const yaoResult = await this.generateYaoInteractively(boxRect); 
+                await new Promise(r => setTimeout(r, 200));
+                const yaoResult = await this.generateYaoInteractively();
                 originalYaoValues.push(yaoResult.value);
+                originalYaoInfos.push(yaoResult.info);
                 this.state.divinationData.push(yaoResult);
             }
             this.elements.interactionPrompt.textContent = '卦象生成...';
-            await this.animateFinalHexagramFormation();
+            await this.animateFinalHexagramFormation(originalYaoInfos);
             this.elements.interactiveContainer.classList.remove('visible');
-            this.stopAnimationLoop();
             return originalYaoValues;
         },
 
-        // 执行随机数法流程
         runRandomDivination: async function() {
             this.state.divinationData = [];
             const originalYaoValues = [];
@@ -769,47 +578,6 @@
             return originalYaoValues;
         },
 
-        // 显示最终六爻的过渡动画
-        showFinalYaoAnimation: function(yaoValues) {
-            return new Promise(resolve => {
-                const overlay = this.elements.finalYaoAnimationOverlay;
-                const linesContainer = this.elements.finalYaoLines;
-                linesContainer.innerHTML = ''; 
-
-                gsap.set(overlay, { opacity: 0 });
-                gsap.set(linesContainer, { scale: 1, opacity: 1 });
-
-                yaoValues.forEach(value => {
-                    const yaoInfo = this.getYaoInfo(value);
-                    const displayInfo = { ...yaoInfo, isChanging: false, symbol: '' };
-                    linesContainer.appendChild(this.createYaoElement(displayInfo));
-                });
-
-                const tl = gsap.timeline({ onComplete: resolve });
-
-                tl.to(overlay, { opacity: 1, duration: 0.3 })
-                  .from(linesContainer.children, {
-                      opacity: 0,
-                      scale: 0.5,
-                      stagger: 0.1,
-                      duration: 0.5,
-                      ease: 'back.out(1.7)'
-                  })
-                  .to(linesContainer, {
-                      scale: 0,
-                      opacity: 0,
-                      duration: 0.6,
-                      ease: 'power2.in'
-                  }, "+=1.2")
-                  .to(overlay, {
-                      opacity: 0,
-                      duration: 0.6,
-                      ease: 'power2.in'
-                  }, "<"); 
-            });
-        },
-
-        // 总的卜卦启动函数
         startDivination: async function() {
             if (this.state.isMobile && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try { await DeviceOrientationEvent.requestPermission(); } catch (error) { console.error('陀螺仪权限请求失败:', error); }
@@ -821,16 +589,12 @@
             this.elements.changedHexagram.innerHTML = '';
             gsap.to(this.elements.mainContainer, { opacity: 0, duration: 0.5 });
             document.body.classList.add('divining');
-            
             let originalYaoValues;
             if (this.state.divinationMethod === 'yarrow') {
                 originalYaoValues = await this.runYarrowDivination();
             } else {
                 originalYaoValues = await this.runRandomDivination();
             }
-
-            await this.showFinalYaoAnimation(originalYaoValues);
-
             document.body.classList.remove('divining');
             this.displayHexagrams(originalYaoValues);
             this.displayInterpretations(originalYaoValues);
@@ -841,9 +605,6 @@
             this.setupResultActions();
         },
 
-        // --- UI 渲染与更新 ---
-
-        // 设置结果页面的按钮（卦象解释、再算一卦）
         setupResultActions: function() {
             this.elements.resultActionsWrapper.innerHTML = '';
             const interpButton = document.createElement('button');
@@ -869,7 +630,6 @@
             this.elements.resultActionsWrapper.appendChild(resetButton);
         },
 
-        // 显示卦象解释的弹窗
         showInterpretationModal: function() {
             const { currentOriginalHexKey, currentChangedHexKey } = this.state;
             const originalData = HEXAGRAM_DATA[currentOriginalHexKey];
@@ -882,10 +642,12 @@
             const contentOriginal = document.getElementById('content-original');
             const contentChanged = document.getElementById('content-changed');
 
+            // Use innerHTML to render bold tags
             contentOriginal.innerHTML = originalData.interpretation;
             tabOriginal.textContent = `本卦：${originalData.name}`;
 
             if (changedData) {
+                // Use innerHTML to render bold tags
                 contentChanged.innerHTML = changedData.interpretation;
                 tabChanged.textContent = `变卦：${changedData.name}`;
                 tabChanged.style.display = 'inline-block';
@@ -901,7 +663,6 @@
             this.elements.interpretationModalOverlay.classList.add('visible');
         },
 
-        // 根据数值（6,7,8,9）获取爻的信息
         getYaoInfo: function(value) {
              switch (value) {
                 case 6: return { type: 'yin', isChanging: true, binary: '0', symbol: '×' };
@@ -912,14 +673,12 @@
             }
         },
         
-        // 获取变爻对应的爻值
         getChangedYaoValue: function(value) {
             if (value === 6) return 7;
             if (value === 9) return 8;
             return value;
         },
 
-        // 创建单个爻的SVG DOM元素
         createYaoElement: function(info) {
             const yaoDiv = document.createElement('div');
             yaoDiv.className = `yao yao-${info.type}`;
@@ -954,7 +713,6 @@
             return yaoDiv;
         },
 
-        // 将生成的本卦和变卦渲染到页面
         displayHexagrams: function(originalYaoValues) {
             this.elements.originalHexagram.innerHTML = '';
             this.elements.changedHexagram.innerHTML = '';
@@ -966,7 +724,6 @@
             gsap.from(this.elements.changedHexagram.children, { opacity: 0, stagger: 0.1 });
         },
 
-        // 根据爻的二进制码查找并显示卦名和解释
         displayInterpretations: function(originalYaoValues) {
             const originalBinary = [...originalYaoValues].map(v => this.getYaoInfo(v).binary).reverse().join('');
             const changedBinary = [...originalYaoValues].map(v => this.getYaoInfo(this.getChangedYaoValue(v)).binary).reverse().join('');
@@ -988,17 +745,10 @@
             }
         },
 
-        // --- 初始化与辅助功能 ---
-
-        // 初始化视差效果（桌面端鼠标移动，移动端陀螺仪）
         initParallax: function() {
             const container = this.elements.mainContainer;
+            const sensitivity = 25;
             if (this.state.isMobile) {
-                const rotX = gsap.quickSetter(container, "rotationX", "deg");
-                const rotY = gsap.quickSetter(container, "rotationY", "deg");
-                let target = { x: 0, y: 0 };
-                let current = { x: 0, y: 0 };
-                const smoothing = 0.08;
                 window.addEventListener('deviceorientation', (e) => {
                     const { beta, gamma } = e;
                     if (beta === null || gamma === null) return;
@@ -1009,16 +759,9 @@
                     }
                     const deltaBeta = beta - this.state.baseBeta;
                     const deltaGamma = gamma - this.state.baseGamma;
-                    const clampedGamma = gsap.utils.clamp(-45, 45, deltaGamma);
-                    const clampedBeta = gsap.utils.clamp(-45, 45, deltaBeta);
-                    target.y = clampedGamma * 0.4;
-                    target.x = -clampedBeta * 0.4;
-                });
-                gsap.ticker.add(() => {
-                    current.x += (target.x - current.x) * smoothing;
-                    current.y += (target.y - current.y) * smoothing;
-                    rotX(current.x);
-                    rotY(current.y);
+                    const yOffset = gsap.utils.clamp(-45, 45, deltaBeta) / 45; 
+                    const xOffset = gsap.utils.clamp(-45, 45, deltaGamma) / 45;
+                    gsap.to(container, { duration: 0.5, rotationY: xOffset * sensitivity, rotationX: -yOffset * sensitivity, ease: "power1.out" });
                 });
             } else {
                 window.addEventListener('mousemove', (e) => {
@@ -1026,12 +769,11 @@
                     const { innerWidth, innerHeight } = window;
                     const xOffset = (clientX / innerWidth - 0.5) * 2;
                     const yOffset = (clientY / innerHeight - 0.5) * 2;
-                    gsap.to(container, { duration: 1.2, rotationY: xOffset * 8, rotationX: -yOffset * 8, ease: "power1.out" });
+                    gsap.to(container, { duration: 0.8, rotationY: xOffset * 7, rotationX: -yOffset * 7, ease: "power1.out" });
                 });
             }
         },
 
-        // 按钮点击发光特效
         addGlowEffect: function(button) {
             const glow = document.createElement('div');
             glow.className = 'button-glow-effect';
@@ -1039,7 +781,6 @@
             setTimeout(() => glow.remove(), 600);
         },
 
-        // 初始化应用，绑定所有事件监听器
         init: function() {
             this.elements.methodToggle.addEventListener('change', (e) => {
                 this.state.divinationMethod = e.target.checked ? 'yarrow' : 'random';
@@ -1052,11 +793,7 @@
                 this.startDivination();
             });
 
-            // 添加点击事件来展开/收起演算面板
-            this.elements.yaoStatsContainer.addEventListener('click', () => {
-                this.elements.yaoStatsContainer.classList.toggle('collapsed');
-            });
-
+            // 弹窗事件监听
             this.elements.interpretationModalOverlay.addEventListener('click', (e) => {
                 if (e.target === this.elements.interpretationModalOverlay) {
                     this.elements.interpretationModalOverlay.classList.remove('visible');
@@ -1079,24 +816,11 @@
             });
 
             this.initParallax();
-
-            window.addEventListener('resize', () => {
-                if (this.state.animationRunning) {
-                    this.setupCanvas();
-                }
-            });
         }
     };
 
     window.onload = () => {
-        // 确保卦象数据加载完毕后再初始化应用
-        if (typeof HEXAGRAM_DATA !== 'undefined') {
-            app.init();
-        } else {
-            console.error('卦象数据 (HEXAGRAM_DATA) 未能从 data.js 加载。');
-            document.body.innerHTML = '<div style="color: white; text-align: center; padding-top: 50px; font-size: 1.2em;">无法加载数据文件 (data.js)，请检查文件路径是否正确并刷新页面。</div>';
-        }
-        // 调整全局动画速率，优化性能和观感
+        app.init();
         gsap.globalTimeline.timeScale(2.2);
     };
     </script>
