@@ -702,6 +702,10 @@
         },
 
         showInterpretationModal: function() {
+            // 暂停视差效果
+            this.state.isParallaxActive = false;
+            gsap.to(this.elements.mainContainer, { duration: 0.5, rotationY: 0, rotationX: 0, ease: "power1.out" });
+
             const { currentOriginalHexKey, currentChangedHexKey } = this.state;
             const originalData = HEXAGRAM_DATA[currentOriginalHexKey];
             const changedData = currentChangedHexKey ? HEXAGRAM_DATA[currentChangedHexKey] : null;
@@ -837,7 +841,6 @@
                 });
             } else {
                 window.addEventListener('mousemove', (e) => {
-                    // [MODIFIED] 如果视差效果暂停，则不执行任何操作 (为保持一致性)
                     if (!this.state.isParallaxActive) return;
 
                     const { clientX, clientY } = e;
@@ -872,10 +875,16 @@
             this.elements.interpretationModalOverlay.addEventListener('click', (e) => {
                 if (e.target === this.elements.interpretationModalOverlay) {
                     this.elements.interpretationModalOverlay.classList.remove('visible');
+                    // 恢复视差效果
+                    this.state.isParallaxActive = true;
+                    this.state.isCalibrated = false; // 重新校准陀螺仪基准
                 }
             });
             document.getElementById('modal-close-btn').addEventListener('click', () => {
                 this.elements.interpretationModalOverlay.classList.remove('visible');
+                // 恢复视差效果
+                this.state.isParallaxActive = true;
+                this.state.isCalibrated = false; // 重新校准陀螺仪基准
             });
             document.getElementById('tab-original').addEventListener('click', () => {
                 document.getElementById('tab-original').classList.add('active');
