@@ -198,7 +198,8 @@
         }
         .stalk {
             position: absolute; width: 2px; height: 100px;
-            background-color: var(--stalk-color); border-radius: 1px;
+            background: linear-gradient(to right, transparent, var(--stalk-color) 25%, var(--stalk-color) 75%, transparent);
+            border-radius: 2px;
             transform-origin: bottom center;
             will-change: transform, opacity;
         }
@@ -474,7 +475,7 @@
                     const stalksWrapperRect = this.elements.stalksWrapper.getBoundingClientRect();
                     const targetX = (window.innerWidth / 2) - (stalksWrapperRect.left + stalksWrapperRect.width / 2);
                     const targetY = (window.innerHeight / 2) - (stalksWrapperRect.top + stalksWrapperRect.height / 2);
-                    tl.to(allRemainders, { x: targetX, y: targetY, scale: 1, duration: 0.5, stagger: 0.05, ease: 'power2.inOut' }, '+=0.3');
+                    tl.to(allRemainders, { x: targetX, y: targetY, scale: 1, duration: 0.5, stagger: 0.05, ease: 'power2.inOut' }, '-=0.3');
                     tl.to(allRemainders, { y: `+=${window.innerHeight / 2 + 100}`, opacity: 0, duration: 0.6, stagger: 0.03, ease: 'power2.in' });
                     const remainingStalks = stalks.filter(s => !allRemainders.includes(s));
                     tl.to(remainingStalks, { x: 0, rotation: 0, opacity: 1, duration: 0.4, ease: 'power2.inOut' }, '-=0.5');
