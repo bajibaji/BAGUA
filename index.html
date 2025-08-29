@@ -413,8 +413,7 @@
             baseBeta: 0,
             baseGamma: 0,
             currentOriginalHexKey: null,
-            currentChangedHexKey: null,
-            isPerformanceMode: /Mobi|Android/i.test(navigator.userAgent), // 移动端自动开启性能模式
+            currentChangedHexKey: null
         },
 
         performChangeWithInteraction: function(totalSticks, clickRatio) {
@@ -479,44 +478,8 @@
                     const changeResult = this.performChangeWithInteraction(totalSticks, clickRatio);
                     
                     this.elements.interactionPrompt.textContent = `天: ${changeResult.left}, 地: ${changeResult.right}`;
-
-                    // 性能模式下使用简化的动画
-                    if (this.state.isPerformanceMode) {
-                        const tl = gsap.timeline({ onComplete: () => resolve(changeResult) });
-                        const leftStalks = stalks.slice(0, changeResult.left);
-                        const rightStalks = stalks.slice(changeResult.left);
-                        
-                        // 简化的动画序列
-                        tl.to(leftStalks, { 
-                            x: '-=50', 
-                            opacity: 0.7, 
-                            duration: 0.2 
-                        });
-                        tl.to(rightStalks, { 
-                            x: '+=50', 
-                            opacity: 0.7, 
-                            duration: 0.2 
-                        }, '<');
-                        
-                        const remainders = [...stalks.slice(0, changeResult.leftRem), 
-                                         ...stalks.slice(changeResult.left, changeResult.left + changeResult.rightRem)];
-                        
-                        tl.to(remainders, {
-                            scale: 1.1,
-                            opacity: 1,
-                            duration: 0.2
-                        });
-                        
-                        tl.to(stalks, {
-                            opacity: 0,
-                            duration: 0.3,
-                            onComplete: () => {
-                                this.elements.stalksWrapper.innerHTML = '';
-                            }
-                        });
-                        
-                        return;
-                    }                    const tl = gsap.timeline({ onComplete: () => resolve(changeResult) });
+                    
+                    const tl = gsap.timeline({ onComplete: () => resolve(changeResult) });
                     const leftStalks = stalks.slice(0, changeResult.left);
                     const rightStalks = stalks.slice(changeResult.left);
 
