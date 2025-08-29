@@ -7,7 +7,6 @@
     
     <!-- 引入 GSAP 动画库 -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-    <!-- 假设 data.js 存在于同一目录 -->
     <script src="data.js" defer></script>
 
     <style>
@@ -54,7 +53,6 @@
             transform: translate(-50%, -50%);
             z-index: -1;
             opacity: 0.08;
-            will-change: transform;
             animation: slow-rotate 120s linear infinite;
         }
 
@@ -115,7 +113,6 @@
             color: var(--primary-text);
             opacity: 0.7;
             transition: opacity 0.3s ease;
-            cursor: pointer;
         }
         .method-switch {
             position: relative;
@@ -123,16 +120,7 @@
             width: 60px;
             height: 34px;
         }
-        .method-switch input { 
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0,0,0,0);
-            border: 0;
-        }
+        .method-switch input { display: none; }
         .slider {
             position: absolute;
             cursor: pointer;
@@ -153,11 +141,6 @@
         input:checked + .slider { background-color: var(--title-color); }
         input:checked + .slider:before { transform: translateX(26px); }
         #label-yarrow { opacity: 1; }
-        
-        .method-switch:focus-within .slider {
-            outline: 2px solid var(--title-color);
-            outline-offset: 2px;
-        }
 
         .button-wrapper { text-align: center; margin-top: 20px; position: relative; min-height: 60px; display: flex; justify-content: center; align-items: center; gap: 15px;}
         button {
@@ -166,27 +149,14 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             position: relative;
             overflow: hidden;
-            outline: none;
         }
-        button:hover:not(:disabled),
-        button:focus-visible { 
+        button:hover:not(:disabled) { 
             background-color: var(--button-hover-bg); 
             transform: translateY(-2px); 
             box-shadow: 0 6px 20px var(--glow-color); 
         }
         button:active:not(:disabled) { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
-        button:focus-visible {
-            outline: 2px solid var(--title-color);
-            outline-offset: 2px;
-        }
-        
-        @media (hover: none) {
-            button:hover:not(:disabled) {
-                transform: none;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            }
-        }
 
         /* --- 单独设置卦象解释按钮颜色 --- */
         #interp-button {
@@ -208,65 +178,8 @@
             width: 18px; height: 18px; border: 2px solid #FFF; border-bottom-color: transparent;
             border-radius: 50%; display: inline-block; box-sizing: border-box;
             animation: rotation 1s linear infinite; margin-left: 10px; vertical-align: middle;
-            position: relative;
-        }
-        .loader::after {
-            content: "加载中";
-            position: absolute;
-            left: 50%;
-            top: 150%;
-            transform: translateX(-50%);
-            white-space: nowrap;
-            font-size: 0.8em;
-            opacity: 0.8;
         }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* 移动端优化 */
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-                margin: 10px;
-                width: calc(100% - 20px);
-            }
-            
-            h1 { font-size: 1.8em; }
-            
-            button {
-                padding: 10px 20px;
-                font-size: 1em;
-            }
-            
-            #stalks-wrapper {
-                width: 90%;
-                height: 120px;
-            }
-            
-            .button-wrapper {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            button {
-                width: 100%;
-                max-width: 300px;
-            }
-        }
-        
-        /* 触摸设备优化 */
-        @media (hover: none) and (pointer: coarse) {
-            .button-wrapper {
-                margin-bottom: 20px;
-            }
-            
-            button {
-                padding: 15px 25px;
-            }
-            
-            #stalks-wrapper {
-                min-height: 180px;
-            }
-        }
         
         #interactive-animation-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -287,7 +200,7 @@
             position: absolute; width: 2px; height: 100px;
             background-color: var(--stalk-color); border-radius: 1px;
             transform-origin: bottom center;
-            will-change: transform, opacity; /* 启用GPU加速 */
+            will-change: transform, opacity;
         }
 
         #yao-stats-container {
@@ -311,7 +224,7 @@
         .hexagram-name { margin-top: 15px; font-size: 1.8em; font-weight: bold; height: 1.5em; letter-spacing: 2px; text-shadow: 0 0 8px rgba(0,0,0,0.5); }
         #original-hexagram-name { color: var(--original-hex-color); }
         #changed-hexagram-name { color: var(--changed-hex-color); }
-        .yao { display: flex; justify-content: center; align-items: center; height: 25px; margin: 8px 0; position: relative; width: 120px; will-change: transform, opacity; } /* 启用GPU加速 */
+        .yao { display: flex; justify-content: center; align-items: center; height: 25px; margin: 8px 0; position: relative; width: 120px; }
         .yao svg { width: 100%; height: 8px; display: block; }
         .yao svg line { stroke: var(--primary-text); transition: stroke 0.3s ease; }
         .yao.yao-changing svg line { stroke: var(--changing-yao-color); }
@@ -331,7 +244,6 @@
             border-radius: 10px; border: 1px solid var(--border-color);
             box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column;
             max-height: 80vh; transform: scale(0.9); transition: transform 0.3s ease;
-            overscroll-behavior: contain; /* 防止滚动穿透 */
         }
         #interpretation-modal-overlay.visible #interpretation-modal { transform: scale(1); }
         #modal-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
@@ -495,13 +407,12 @@
             divinationData: [],
             isMobile: /Mobi|Android/i.test(navigator.userAgent),
             divinationMethod: 'yarrow',
-            isParallaxActive: true, 
+            isParallaxActive: true, // [MODIFIED] 新增状态：控制视差效果是否激活
             isCalibrated: false,
             baseBeta: 0,
             baseGamma: 0,
             currentOriginalHexKey: null,
             currentChangedHexKey: null,
-            isPerformanceReduced: false, // [OPTIMIZATION] 性能降级标志
         },
 
         performChangeWithInteraction: function(totalSticks, clickRatio) {
@@ -524,18 +435,13 @@
             return new Promise(resolve => {
                 this.elements.interactionPrompt.textContent = `第 ${changeName} 变，请点击分蓍草`;
                 this.elements.stalksWrapper.innerHTML = '';
-                
-                // [OPTIMIZATION] 使用 DocumentFragment 批量添加DOM
-                const fragment = document.createDocumentFragment();
                 const stalks = [];
                 for (let i = 0; i < totalSticks; i++) {
                     const stalk = document.createElement('div');
                     stalk.className = 'stalk';
-                    fragment.appendChild(stalk);
+                    this.elements.stalksWrapper.appendChild(stalk);
                     stalks.push(stalk);
                 }
-                this.elements.stalksWrapper.appendChild(fragment);
-
                 gsap.fromTo(stalks, { x: 0, y: 0, rotation: 0 }, { x: (i) => (i - totalSticks / 2) * (this.elements.stalksWrapper.offsetWidth * 0.8 / totalSticks), y: () => (Math.random() - 0.5) * 10, rotation: () => (Math.random() - 0.5) * 15, duration: 0.5, ease: 'power2.out' });
                 
                 const clickHandler = (e) => {
@@ -549,26 +455,12 @@
                     
                     this.elements.interactionPrompt.textContent = `天: ${changeResult.left}, 地: ${changeResult.right}`;
 
-                    // [OPTIMIZATION] 性能降级处理
-                    if (this.state.isPerformanceReduced) {
-                        // 简化动画，直接显示结果
-                        gsap.to(stalks, {
-                            opacity: 0,
-                            duration: 0.3,
-                            onComplete: () => resolve(changeResult)
-                        });
-                        return;
-                    }
-
                     const tl = gsap.timeline({ onComplete: () => resolve(changeResult) });
                     const leftStalks = stalks.slice(0, changeResult.left);
                     const rightStalks = stalks.slice(changeResult.left);
-                    
-                    // [OPTIMIZATION] 动态调整 stagger
-                    const dynamicStagger = Math.min(0.01, 0.5 / totalSticks);
 
-                    tl.to(leftStalks, { x: '-=100', rotation: -20, duration: 0.3, ease: 'power2.inOut', stagger: dynamicStagger });
-                    tl.to(rightStalks, { x: '+=100', rotation: 20, duration: 0.3, ease: 'power2.inOut', stagger: dynamicStagger }, '<');
+                    tl.to(leftStalks, { x: '-=100', rotation: -20, duration: 0.3, ease: 'power2.inOut', stagger: 0.005 });
+                    tl.to(rightStalks, { x: '+=100', rotation: 20, duration: 0.3, ease: 'power2.inOut', stagger: 0.005 }, '<');
                     const heldStalk = rightStalks.pop();
                     tl.to(heldStalk, { y: -80, x: '+=20', rotation: 15, duration: 0.3, ease: 'power2.out' }, '-=0.2');
                     const leftRemainderStalks = leftStalks.slice(0, changeResult.leftRem);
@@ -623,13 +515,6 @@
 
         animateFinalHexagramFormation: async function(yaoInfos) {
             const finalStalks = Array.from(this.elements.stalksWrapper.querySelectorAll('.stalk')).filter(s => gsap.getProperty(s, "opacity") > 0);
-            if (this.state.isPerformanceReduced) {
-                // 简化动画
-                gsap.to(finalStalks, { opacity: 0, duration: 0.3 });
-                await new Promise(r => setTimeout(r, 300));
-                return;
-            }
-            
             const flyingHexagram = document.createElement('div');
             flyingHexagram.style.position = 'absolute';
             flyingHexagram.style.display = 'flex';
@@ -692,18 +577,8 @@
         },
 
         startDivination: async function() {
-            // [OPTIMIZATION] 陀螺仪权限请求及回退
             if (this.state.isMobile && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission !== 'granted') {
-                        this.state.isParallaxActive = false;
-                        console.log('陀螺仪权限未授予，视差效果已禁用。');
-                    }
-                } catch (error) {
-                    console.error('陀螺仪权限请求失败:', error);
-                    this.state.isParallaxActive = false; // 请求失败或被拒绝时禁用
-                }
+                try { await DeviceOrientationEvent.requestPermission(); } catch (error) { console.error('陀螺仪权限请求失败:', error); }
             }
             this.elements.divineButton.disabled = true;
             this.elements.divineButton.innerHTML = '推演中...<span class="loader"></span>';
@@ -711,6 +586,7 @@
             this.elements.originalHexagram.innerHTML = '';
             this.elements.changedHexagram.innerHTML = '';
 
+            // [MODIFIED] 如果是大衍筮法，则暂停视差效果并重置窗口位置
             if (this.state.divinationMethod === 'yarrow') {
                 this.state.isParallaxActive = false;
                 gsap.to(this.elements.mainContainer, { duration: 0.5, rotationY: 0, rotationX: 0, ease: "power1.out" });
@@ -725,8 +601,9 @@
                 originalYaoValues = await this.runRandomDivination();
             }
 
+            // [MODIFIED] 推演结束后，重新激活视差效果
             this.state.isParallaxActive = true;
-            this.state.isCalibrated = false; 
+            this.state.isCalibrated = false; // 强制重新校准陀螺仪基准，以获得平滑的过渡
 
             document.body.classList.remove('divining');
             this.displayHexagrams(originalYaoValues);
@@ -877,15 +754,11 @@
         },
 
         initParallax: function() {
-            if (this.state.isPerformanceReduced) {
-                this.state.isParallaxActive = false; // 在低性能设备上直接禁用视差
-                return;
-            }
-
             const container = this.elements.mainContainer;
             const sensitivity = 25;
             if (this.state.isMobile) {
                 window.addEventListener('deviceorientation', (e) => {
+                    // [MODIFIED] 如果视差效果暂停，则不执行任何操作
                     if (!this.state.isParallaxActive) return;
 
                     const { beta, gamma } = e;
@@ -903,6 +776,7 @@
                 });
             } else {
                 window.addEventListener('mousemove', (e) => {
+                    // [MODIFIED] 如果视差效果暂停，则不执行任何操作 (为保持一致性)
                     if (!this.state.isParallaxActive) return;
 
                     const { clientX, clientY } = e;
@@ -922,13 +796,6 @@
         },
 
         init: function() {
-            // [OPTIMIZATION] 检查设备性能和用户偏好
-            this.state.isPerformanceReduced = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || 
-                                              window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            
-            // 根据性能调整全局动画速率
-            gsap.globalTimeline.timeScale(this.state.isPerformanceReduced ? 1.5 : 2.2);
-
             this.elements.methodToggle.addEventListener('change', (e) => {
                 this.state.divinationMethod = e.target.checked ? 'yarrow' : 'random';
                 this.elements.labelYarrow.style.opacity = e.target.checked ? 1 : 0.7;
@@ -972,14 +839,9 @@
             app.init();
         } else {
             // 如果 data.js 延迟加载，设置一个短延时
-            console.error("HEXAGRAM_DATA not found. Make sure data.js is loaded correctly.");
-            setTimeout(() => {
-                if (typeof HEXAGRAM_DATA !== 'undefined') {
-                    app.init();
-                }
-            }, 100);
+            setTimeout(() => app.init(), 100);
         }
-         gsap.globalTimeline.timeScale(2.2); // 设置全局动画速率
+        gsap.globalTimeline.timeScale(2.2);
     };
     </script>
 </body>
