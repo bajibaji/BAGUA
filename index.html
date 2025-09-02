@@ -160,8 +160,8 @@
             transition: .4s;
             border-radius: 50%;
         }
-        input:checked + .slider { background-color: var(--title-color); }
-        input:checked + .slider:before { transform: translateX(26px); }
+        input:checked + .slider { background-color: transparent; }
+        input:checked + .slider:before { transform: translateX(26px); background-color: var(--title-color); }
         #label-yarrow { opacity: 1; }
 
         .button-wrapper { text-align: center; margin-top: 20px; position: relative; min-height: 60px; display: flex; justify-content: center; align-items: center; gap: 15px;}
@@ -317,16 +317,16 @@
             position: fixed;
             top: 15px;
             right: 15px;
-            background: var(--container-bg);
-            border-radius: 16px;
-            padding: 4px 8px;
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             z-index: 100;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            border: 1px solid var(--border-color);
+            box-shadow: none;
+            border: none;
             transition: all 0.3s ease;
         }
         #theme-toggle:hover {
@@ -389,11 +389,11 @@
             top: 20px;
             left: 20px;
             width: auto;
-            height: 30px;
-            padding: 0 15px;
-            border-radius: 20px;
-            background: var(--button-bg);
-            color: white;
+            height: auto;
+            padding: 0;
+            border-radius: 0;
+            background: transparent;
+            color: var(--title-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -407,13 +407,18 @@
             font-weight: bold;
         }
         #history-button:hover {
-            transform: translateY(-2px);
-            background: var(--button-hover-bg);
-            box-shadow: 0 4px 15px var(--glow-color);
+            transform: none;
+            background: transparent;
+            box-shadow: none;
+            opacity: 0.8;
+            width: auto;
+            height: auto;
+            padding: 0;
         }
         .history-icon {
             font-size: 1.0rem;
             transition: transform 0.3s ease;
+            transform: none;
         }
         .history-text {
             display: none;
