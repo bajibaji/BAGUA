@@ -13,6 +13,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
 
         :root {
+            /* 暗色主题 (默认) */
             --bg-color: #1a1a1a;
             --container-bg: rgba(44, 44, 44, 0.55);
             --primary-text: #e0e0e0;
@@ -26,6 +27,27 @@
             --original-hex-color: #61afef;
             --changed-hex-color: #e06c75;
             --stalk-color: #f0e68c; /* 蓍草颜色 */
+            --modal-bg: rgba(44, 44, 44, 0.85);
+            --modal-border: #555;
+        }
+        
+        /* 明亮主题 */
+        :root.light-theme {
+            --bg-color: #f5f0e8;
+            --container-bg: rgba(255, 255, 255, 0.7);
+            --primary-text: #333333;
+            --title-color: #9c7c38;
+            --border-color: #d0c8b0;
+            --button-bg: #b39b6f;
+            --button-hover-bg: #c9af7e;
+            --hexagram-bg: #f0e8d8;
+            --changing-yao-color: #d04848;
+            --glow-color: rgba(179, 155, 111, 0.5);
+            --original-hex-color: #3a7ab3;
+            --changed-hex-color: #b34c55;
+            --stalk-color: #d4c88c;
+            --modal-bg: rgba(255, 255, 255, 0.9);
+            --modal-border: #d0c8b0;
         }
 
         body {
@@ -181,6 +203,46 @@
         }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
+        /* 页面加载动画样式 */
+        #page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        .loader-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .loader-symbol {
+            font-size: 4rem;
+            color: var(--title-color);
+            animation: float 2s ease-in-out infinite, rotate 6s linear infinite;
+            text-shadow: 0 0 15px var(--glow-color);
+        }
+        .loader-text {
+            color: var(--primary-text);
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         #interactive-animation-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,6.6);
@@ -249,6 +311,198 @@
         #interpretation-modal-overlay.visible #interpretation-modal { transform: scale(1); }
         #modal-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
         #modal-tabs { display: flex; gap: 10px; }
+        
+        /* 主题切换按钮样式 */
+        #theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--container-bg);
+            border-radius: 20px;
+            padding: 5px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        #theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px var(--glow-color);
+        }
+        .theme-icon {
+            font-size: 1.2rem;
+            padding: 5px;
+            transition: opacity 0.3s ease;
+        }
+        :root:not(.light-theme) #theme-icon-light {
+            opacity: 0.3;
+        }
+        :root.light-theme #theme-icon-dark {
+            opacity: 0.3;
+        }
+        
+        /* 问题输入框样式 */
+        .question-input-container {
+            margin: 20px auto;
+            width: 90%;
+            max-width: 500px;
+        }
+        #question-input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.2);
+            color: var(--primary-text);
+            font-family: inherit;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        #question-input:focus {
+            outline: none;
+            border-color: var(--title-color);
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+        :root.light-theme #question-input {
+            background: rgba(255,255,255,0.7);
+        }
+        
+        /* 历史记录样式 */
+        #history-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--button-bg);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            border: none;
+            transition: all 0.3s ease;
+            font-size: 1.5rem;
+        }
+        #history-button:hover {
+            transform: translateY(-2px);
+            background: var(--button-hover-bg);
+            box-shadow: 0 4px 15px var(--glow-color);
+        }
+        #history-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            z-index: 200;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        #history-modal-overlay.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        #history-modal {
+            width: 90%;
+            max-width: 600px;
+            background: var(--modal-bg);
+            border-radius: 10px;
+            border: 1px solid var(--modal-border);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        #history-modal-overlay.visible #history-modal {
+            transform: scale(1);
+        }
+        #history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        #history-title {
+            font-size: 1.3em;
+            color: var(--title-color);
+            font-weight: bold;
+        }
+        #history-close-btn {
+            background: none;
+            border: none;
+            color: var(--primary-text);
+            font-size: 2em;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            padding: 0;
+            line-height: 1;
+        }
+        #history-close-btn:hover {
+            opacity: 1;
+        }
+        #history-content {
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(80vh - 60px);
+        }
+        .history-item {
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .history-item:hover {
+            background: rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+        }
+        .history-date {
+            font-size: 0.8em;
+            color: var(--primary-text);
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+        .history-question {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .history-hexagrams {
+            display: flex;
+            gap: 15px;
+        }
+        .history-hexagram {
+            text-align: center;
+        }
+        .history-hexagram-name {
+            font-size: 1.1em;
+            color: var(--title-color);
+        }
+        .no-history {
+            text-align: center;
+            padding: 30px;
+            color: var(--primary-text);
+            opacity: 0.7;
+        }
         .modal-tab {
             background: transparent; border: 2px solid transparent; color: var(--primary-text);
             opacity: 0.6; padding: 8px 16px; font-size: 1em; border-radius: 6px;
@@ -282,6 +536,14 @@
 </head>
 <body>
     
+    <!-- 添加页面加载动画 -->
+    <div id="page-loader">
+        <div class="loader-content">
+            <div class="loader-symbol">☯</div>
+            <div class="loader-text">加载中...</div>
+        </div>
+    </div>
+
     <div id="background-bagua">
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" color="var(--primary-text)">
             <defs>
@@ -314,12 +576,24 @@
             </g>
         </svg>
     </div>
+    <!-- 主题切换按钮 -->
+    <div id="theme-toggle">
+        <span class="theme-icon" id="theme-icon-dark">🌙</span>
+        <span class="theme-icon" id="theme-icon-light">☀️</span>
+    </div>
+    
     <div class="container" id="main-container">
         <div id="intro-section">
             <h1><b>大衍筮法 · 在线卜卦</b></h1>
             <div class="section">
                 <p><i>心诚则灵，一事一问</i></p>
             </div>
+            
+            <!-- 添加问题输入框 -->
+            <div class="question-input-container">
+                <input type="text" id="question-input" placeholder="请输入您想问的问题…也可以不输" maxlength="50">
+            </div>
+            
             <div class="method-selector">
                 <label id="label-random">随机数法</label>
                 <label class="method-switch">
@@ -378,6 +652,22 @@
             </div>
         </div>
     </div>
+    
+    <!-- 历史记录按钮 -->
+    <button id="history-button" title="查看历史记录">📜</button>
+    
+    <!-- 历史记录模态框 -->
+    <div id="history-modal-overlay">
+        <div id="history-modal">
+            <div id="history-header">
+                <div id="history-title">卜卦历史记录</div>
+                <button id="history-close-btn">&times;</button>
+            </div>
+            <div id="history-content">
+                <!-- 历史记录内容将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
 
     <script>
     const app = {
@@ -413,7 +703,9 @@
             baseBeta: 0,
             baseGamma: 0,
             currentOriginalHexKey: null,
-            currentChangedHexKey: null
+            currentChangedHexKey: null,
+            currentQuestion: '',
+            divinationHistory: []
         },
 
         performChangeWithInteraction: function(totalSticks, clickRatio) {
@@ -779,6 +1071,13 @@
                 this.elements.changedHexagramContainer.style.display = 'none';
                 this.elements.changedHexagramName.textContent = '';
             }
+            
+            // 保存卜卦历史记录
+            this.saveHistory(
+                this.state.currentQuestion,
+                originalBinary,
+                originalBinary !== changedBinary ? changedBinary : null
+            );
         },
 
         initParallax: function() {
@@ -822,7 +1121,129 @@
             setTimeout(() => glow.remove(), 600);
         },
 
+        // 保存卜卦历史记录
+        saveHistory: function(question, originalHexKey, changedHexKey) {
+            const historyItem = {
+                date: new Date().toLocaleString(),
+                question: question || '无问题',
+                originalHexKey: originalHexKey,
+                changedHexKey: changedHexKey,
+                originalName: HEXAGRAM_DATA[originalHexKey]?.name || '未知',
+                changedName: changedHexKey ? (HEXAGRAM_DATA[changedHexKey]?.name || '未知') : null
+            };
+            
+            // 从本地存储获取历史记录
+            let history = JSON.parse(localStorage.getItem('bagua-history') || '[]');
+            
+            // 添加新记录到开头
+            history.unshift(historyItem);
+            
+            // 限制历史记录数量为20条
+            if (history.length > 20) {
+                history = history.slice(0, 20);
+            }
+            
+            // 保存到本地存储
+            localStorage.setItem('bagua-history', JSON.stringify(history));
+            
+            // 更新当前状态
+            this.state.divinationHistory = history;
+        },
+        
+        // 显示历史记录
+        showHistoryModal: function() {
+            const historyContent = document.getElementById('history-content');
+            historyContent.innerHTML = '';
+            
+            // 从本地存储获取历史记录
+            const history = JSON.parse(localStorage.getItem('bagua-history') || '[]');
+            this.state.divinationHistory = history;
+            
+            if (history.length === 0) {
+                historyContent.innerHTML = '<div class="no-history">暂无卜卦历史记录</div>';
+            } else {
+                history.forEach((item, index) => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.dataset.index = index;
+                    
+                    const dateEl = document.createElement('div');
+                    dateEl.className = 'history-date';
+                    dateEl.textContent = item.date;
+                    
+                    const questionEl = document.createElement('div');
+                    questionEl.className = 'history-question';
+                    questionEl.textContent = item.question;
+                    
+                    const hexagramsEl = document.createElement('div');
+                    hexagramsEl.className = 'history-hexagrams';
+                    
+                    const originalEl = document.createElement('div');
+                    originalEl.className = 'history-hexagram';
+                    originalEl.innerHTML = `<div class="history-hexagram-name">${item.originalName}卦</div>`;
+                    
+                    hexagramsEl.appendChild(originalEl);
+                    
+                    if (item.changedName) {
+                        const changedEl = document.createElement('div');
+                        changedEl.className = 'history-hexagram';
+                        changedEl.innerHTML = `<div class="history-hexagram-name">${item.changedName}卦</div>`;
+                        hexagramsEl.appendChild(changedEl);
+                    }
+                    
+                    historyItem.appendChild(dateEl);
+                    historyItem.appendChild(questionEl);
+                    historyItem.appendChild(hexagramsEl);
+                    
+                    // 点击历史记录项查看详情
+                    historyItem.addEventListener('click', () => {
+                        document.getElementById('history-modal-overlay').classList.remove('visible');
+                        this.showHistoryDetail(item);
+                    });
+                    
+                    historyContent.appendChild(historyItem);
+                });
+            }
+            
+            document.getElementById('history-modal-overlay').classList.add('visible');
+        },
+        
+        // 显示历史记录详情
+        showHistoryDetail: function(item) {
+            // 显示解释弹窗
+            const tabOriginal = document.getElementById('tab-original');
+            const tabChanged = document.getElementById('tab-changed');
+            const contentOriginal = document.getElementById('content-original');
+            const contentChanged = document.getElementById('content-changed');
+            
+            const originalData = HEXAGRAM_DATA[item.originalHexKey];
+            const changedData = item.changedHexKey ? HEXAGRAM_DATA[item.changedHexKey] : null;
+            
+            if (!originalData) return;
+            
+            contentOriginal.innerHTML = originalData.interpretation;
+            tabOriginal.textContent = `本卦：${originalData.name}`;
+            
+            if (changedData) {
+                contentChanged.innerHTML = changedData.interpretation;
+                tabChanged.textContent = `变卦：${changedData.name}`;
+                tabChanged.style.display = 'inline-block';
+            } else {
+                tabChanged.style.display = 'none';
+            }
+            
+            tabOriginal.classList.add('active');
+            contentOriginal.classList.add('active');
+            tabChanged.classList.remove('active');
+            contentChanged.classList.remove('active');
+            
+            this.elements.interpretationModalOverlay.classList.add('visible');
+        },
+        
         init: function() {
+            // 加载历史记录
+            this.state.divinationHistory = JSON.parse(localStorage.getItem('bagua-history') || '[]');
+            
             this.elements.methodToggle.addEventListener('change', (e) => {
                 this.state.divinationMethod = e.target.checked ? 'yarrow' : 'random';
                 this.elements.labelYarrow.style.opacity = e.target.checked ? 1 : 0.7;
@@ -831,7 +1252,27 @@
 
             this.elements.divineButton.addEventListener('click', (e) => {
                 this.addGlowEffect(e.currentTarget);
+                // 获取问题输入
+                const questionInput = document.getElementById('question-input');
+                this.state.currentQuestion = questionInput.value.trim();
                 this.startDivination();
+            });
+            
+            // 历史记录按钮事件
+            document.getElementById('history-button').addEventListener('click', () => {
+                this.showHistoryModal();
+            });
+            
+            // 历史记录模态框关闭按钮
+            document.getElementById('history-close-btn').addEventListener('click', () => {
+                document.getElementById('history-modal-overlay').classList.remove('visible');
+            });
+            
+            // 点击历史记录模态框背景关闭
+            document.getElementById('history-modal-overlay').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('history-modal-overlay')) {
+                    document.getElementById('history-modal-overlay').classList.remove('visible');
+                }
             });
 
             // 弹窗事件监听
@@ -867,6 +1308,17 @@
     };
 
     window.onload = () => {
+        // 隐藏加载动画
+        setTimeout(() => {
+            const pageLoader = document.getElementById('page-loader');
+            if (pageLoader) {
+                pageLoader.style.opacity = '0';
+                setTimeout(() => {
+                    pageLoader.style.visibility = 'hidden';
+                }, 500);
+            }
+        }, 800);
+        
         // 确保在 data.js 加载完毕后初始化
         if (typeof HEXAGRAM_DATA !== 'undefined') {
             app.init();
@@ -875,7 +1327,27 @@
             setTimeout(() => app.init(), 100);
         }
         gsap.globalTimeline.timeScale(2.2);
+        
+        // 初始化主题
+        initTheme();
     };
+    
+    // 主题切换功能
+    function initTheme() {
+        const themeToggle = document.getElementById('theme-toggle');
+        const savedTheme = localStorage.getItem('bagua-theme');
+        
+        // 应用保存的主题
+        if (savedTheme === 'light') {
+            document.documentElement.classList.add('light-theme');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('light-theme');
+            const currentTheme = document.documentElement.classList.contains('light-theme') ? 'light' : 'dark';
+            localStorage.setItem('bagua-theme', currentTheme);
+        });
+    }
     </script>
 </body>
 </html>
