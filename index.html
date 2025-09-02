@@ -401,65 +401,52 @@
             position: fixed;
             top: 15px;
             left: 15px;
-            padding: 8px 12px;
             background: transparent;
-            color: var(--title-color);
             border: none;
-            cursor: pointer;
-            z-index: 100;
-            -webkit-tap-highlight-color: transparent;
+            color: var(--modal-border); /* 使用标题颜色以保持一致 */
+            font-family: inherit;
             font-size: 0.9rem;
             font-weight: bold;
+            cursor: pointer;
+            z-index: 10;
+            padding: 8px 12px;
+            -webkit-tap-highlight-color: transparent;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
             transform-origin: left center;
-            /* Explicitly override generic button styles that we don't want */
             box-shadow: none;
-            transform: none; /* Reset transform from generic button style */
-            transition: transform 0.3s ease, opacity 0.3s ease; /* Transition only specific properties */
-        }
-        /* State: Hovering over the button */
-        #history-button:hover {
-            opacity: 0.7;
-            transform: skewX(30deg);
-        }
-        /* State: Button is active (being clicked) */
-        #history-button:active {
-            /* Keep the skew effect during the click, overriding the generic button's active transform */
-            transform: skewX(30deg);
-        }
-        /* State: Modal is open (JS adds this class) */
-        #history-button.active {
-            transform: skewX(30deg);
-        }
-        #history-button:focus {
-            outline: none;
-            box-shadow: none;
-        }
-        .history-icon {
-            font-size: 1.0rem;
-            display: inline-block;
-            transition: transform 0.3s ease;
-            /* transform-origin must be center to avoid movement */
-            transform-origin: center center;
-        }
-        /* Apply the counter-skew in all skewed states */
-        #history-button:hover .history-icon,
-        #history-button:active .history-icon,
-        #history-button.active .history-icon {
-            transform: skewX(-30deg);
-        }
-        .history-text {
-            display: none;
-        }
-        @media (min-width: 768px) {
-            .history-text {
-                display: inline;
-            }
+            transform: none;
+            transition: none;
         }
 
+        #history-button:hover, #history-button:active, #history-button:focus {
+            background: transparent;
+            border: none;
+            outline: none;
+            box-shadow: none;
+            opacity: 1;
+            transform: none;
+        }
+
+        /* 清除按钮样式 */
+        .clear-history-button {
+            display: block;
+            margin: 15px auto;
+            padding: 8px 16px;
+            background-color: #c93756;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s ease;
+        }
+        .clear-history-button:hover {
+            background-color: #e04a69;
+        }
+        
         #history-modal-overlay {
             position: fixed;
             top: 0;
@@ -718,7 +705,7 @@
     
     <!-- 历史记录按钮 -->
     <button id="history-button" title="查看历史记录">
-        <span class="history-icon">歷史記錄</span>
+        歷史記錄
     </button>
     
     <!-- 历史记录模态框 -->
@@ -1203,9 +1190,9 @@
             // 添加新记录到开头
             history.unshift(historyItem);
             
-            // 限制历史记录数量为20条
-            if (history.length > 20) {
-                history = history.slice(0, 20);
+            // 限制历史记录数量为99条
+            if (history.length > 99) {
+                history = history.slice(0, 99);
             }
             
             // 保存到本地存储
@@ -1227,6 +1214,20 @@
             if (history.length === 0) {
                 historyContent.innerHTML = '<div class="no-history">暂无卜卦历史记录</div>';
             } else {
+                // 添加清除按钮
+                const clearButton = document.createElement('button');
+                clearButton.className = 'clear-history-button';
+                clearButton.textContent = '清除所有历史记录';
+                clearButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm('确定要清除所有历史记录吗？')) {
+                        localStorage.removeItem('bagua-history');
+                        this.state.divinationHistory = [];
+                        this.showHistoryModal();
+                    }
+                });
+                historyContent.appendChild(clearButton);
+                
                 history.forEach((item, index) => {
                     const historyItem = document.createElement('div');
                     historyItem.className = 'history-item';
@@ -1422,4 +1423,3 @@
     </script>
 </body>
 </html>
-
