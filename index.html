@@ -322,42 +322,41 @@
         #modal-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
         #modal-tabs { display: flex; gap: 10px; }
         
-        /* --- 修复: 主题切换按钮样式 --- */
+        /* --- [MODIFIED] 主题切换按钮样式 --- */
         #theme-toggle {
             position: fixed;
             top: 15px;
             right: 15px;
             background: transparent;
             border: none;
-            padding: 5px;
             cursor: pointer;
             z-index: 100;
-            box-shadow: none;
-            -webkit-tap-highlight-color: transparent; /* Prevents flash on tap */
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.2s ease;
+            transition: all 0.3s ease;
+            box-shadow: none;
+            padding: 8px;
+            font-family: inherit;
         }
         #theme-toggle:hover {
-            opacity: 0.7;
+            transform: scale(1.1);
         }
         #theme-toggle:focus, #theme-toggle:active {
             outline: none;
             box-shadow: none;
         }
         .theme-icon {
-            font-size: 1.2rem;
-            padding: 0 5px;
-            transition: opacity 0.3s ease;
+            font-size: 1.2rem; /* 调小字体 */
             color: var(--primary-text);
+            line-height: 1;
         }
-        :root:not(.light-theme) #theme-icon-light {
-            opacity: 0.3;
-        }
-        :root.light-theme #theme-icon-dark {
-            opacity: 0.3;
-        }
+        /* 默认隐藏“日”图标 */
+        #theme-icon-light { display: none; }
+        /* 亮色模式下，隐藏“夜”图标 */
+        .light-theme #theme-icon-dark { display: none; }
+        /* 亮色模式下，显示“日”图标 */
+        .light-theme #theme-icon-light { display: inline; }
         
         /* 问题输入框样式 */
         .question-input-container {
@@ -397,7 +396,7 @@
             background: rgba(255,255,255,0.7);
         }
         
-        /* --- 修复: 历史记录按钮样式 --- */
+        /* --- [REVISED] 历史记录按钮样式 --- */
         #history-button {
             position: fixed;
             top: 15px;
@@ -408,7 +407,6 @@
             border: none;
             cursor: pointer;
             z-index: 100;
-            box-shadow: none;
             -webkit-tap-highlight-color: transparent;
             font-size: 0.9rem;
             font-weight: bold;
@@ -416,24 +414,40 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: all 0.3s ease;
             transform-origin: left center;
+            /* Explicitly override generic button styles that we don't want */
+            box-shadow: none;
+            transform: none; /* Reset transform from generic button style */
+            transition: transform 0.3s ease, opacity 0.3s ease; /* Transition only specific properties */
         }
+        /* State: Hovering over the button */
+        #history-button:hover {
+            opacity: 0.7;
+            transform: skewX(30deg);
+        }
+        /* State: Button is active (being clicked) */
+        #history-button:active {
+            /* Keep the skew effect during the click, overriding the generic button's active transform */
+            transform: skewX(30deg);
+        }
+        /* State: Modal is open (JS adds this class) */
         #history-button.active {
             transform: skewX(30deg);
         }
-        #history-button:hover {
-            opacity: 0.7;
-        }
-        #history-button:focus, #history-button:active {
+        #history-button:focus {
             outline: none;
             box-shadow: none;
         }
         .history-icon {
             font-size: 1.0rem;
+            display: inline-block;
             transition: transform 0.3s ease;
-            display: inline-block; /* 确保 transform 生效 */
+            /* transform-origin must be center to avoid movement */
+            transform-origin: center center;
         }
+        /* Apply the counter-skew in all skewed states */
+        #history-button:hover .history-icon,
+        #history-button:active .history-icon,
         #history-button.active .history-icon {
             transform: skewX(-30deg);
         }
@@ -445,9 +459,7 @@
                 display: inline;
             }
         }
-        #history-button:hover .history-icon {
-            transform: none;
-        }
+
         #history-modal-overlay {
             position: fixed;
             top: 0;
@@ -627,11 +639,11 @@
             </g>
         </svg>
     </div>
-    <!-- 主题切换按钮 -->
-    <div id="theme-toggle">
+    <!-- [MODIFIED] 主题切换按钮 -->
+    <button id="theme-toggle" title="切换主题">
         <span class="theme-icon" id="theme-icon-dark">夜</span>
         <span class="theme-icon" id="theme-icon-light">日</span>
-    </div>
+    </button>
     
     <div class="container" id="main-container">
         <div id="intro-section">
@@ -1297,20 +1309,29 @@
             // 加载历史记录
             this.state.divinationHistory = JSON.parse(localStorage.getItem('bagua-history') || '[]');
             
-            // 历史记录按钮点击事件
-            document.getElementById('history-button').addEventListener('click', () => {
-                document.getElementById('history-button').classList.add('clicked');
+            const historyButton = document.getElementById('history-button');
+            const historyModalOverlay = document.getElementById('history-modal-overlay');
+            const historyCloseBtn = document.getElementById('history-close-btn');
+
+            // [FIXED] 历史记录按钮点击事件
+            historyButton.addEventListener('click', () => {
+                historyButton.classList.add('active');
                 this.showHistoryModal();
             });
             
-            // 历史记录弹窗关闭事件
-            document.getElementById('history-modal-overlay').addEventListener('click', (e) => {
-                if (e.target === document.getElementById('history-modal-overlay')) {
-                    document.getElementById('history-modal-overlay').classList.remove('visible');
-                    document.getElementById('history-button').classList.remove('clicked');
+            // [FIXED] 历史记录弹窗关闭事件 (合并)
+            const closeHistoryModal = () => {
+                historyModalOverlay.classList.remove('visible');
+                historyButton.classList.remove('active');
+            };
+
+            historyModalOverlay.addEventListener('click', (e) => {
+                if (e.target === historyModalOverlay) {
+                    closeHistoryModal();
                 }
             });
-            
+            historyCloseBtn.addEventListener('click', closeHistoryModal);
+
             this.elements.methodToggle.addEventListener('change', (e) => {
                 this.state.divinationMethod = e.target.checked ? 'yarrow' : 'random';
                 this.elements.labelYarrow.style.opacity = e.target.checked ? 1 : 0.7;
@@ -1323,23 +1344,6 @@
                 const questionInput = document.getElementById('question-input');
                 this.state.currentQuestion = questionInput.value.trim();
                 this.startDivination();
-            });
-            
-            // 历史记录按钮事件
-            document.getElementById('history-button').addEventListener('click', () => {
-                this.showHistoryModal();
-            });
-            
-            // 历史记录模态框关闭按钮
-            document.getElementById('history-close-btn').addEventListener('click', () => {
-                document.getElementById('history-modal-overlay').classList.remove('visible');
-            });
-            
-            // 点击历史记录模态框背景关闭
-            document.getElementById('history-modal-overlay').addEventListener('click', (e) => {
-                if (e.target === document.getElementById('history-modal-overlay')) {
-                    document.getElementById('history-modal-overlay').classList.remove('visible');
-                }
             });
 
             // 弹窗事件监听
