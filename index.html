@@ -438,7 +438,7 @@
             background-color: #c93756;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 3px;
             cursor: pointer;
             font-size: 0.9rem;
             transition: background-color 0.3s ease;
@@ -1217,10 +1217,10 @@
                 // 添加清除按钮
                 const clearButton = document.createElement('button');
                 clearButton.className = 'clear-history-button';
-                clearButton.textContent = '清除所有历史记录';
+                clearButton.textContent = '归入混元';
                 clearButton.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (confirm('确定要清除所有历史记录吗？')) {
+                    if (confirm('历史记录全部会被删除，确定吗？')) {
                         localStorage.removeItem('bagua-history');
                         this.state.divinationHistory = [];
                         this.showHistoryModal();
