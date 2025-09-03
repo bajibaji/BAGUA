@@ -1125,11 +1125,11 @@
 
             const originalHexData = HEXAGRAM_DATA[originalBinary] || { name: '未知' };
             const changedHexData = HEXAGRAM_DATA[changedBinary] || { name: '未知' };
-            this.elements.originalHexagramName.textContent = `${originalHexData.name}卦`;
+            this.elements.originalHexagramName.textContent = `${originalHexData.name}`;
             gsap.from(this.elements.originalHexagramName, { opacity: 0, y: 10, duration: 0.5, ease: 'power1.out' });
             if (originalBinary !== changedBinary) {
                 this.elements.changedHexagramContainer.style.display = 'flex';
-                this.elements.changedHexagramName.textContent = `${changedHexData.name}卦`;
+                this.elements.changedHexagramName.textContent = `${changedHexData.name}`;
                 gsap.from(this.elements.changedHexagramName, { opacity: 0, y: 10, duration: 0.5, ease: 'power1.out' });
             } else {
                 this.elements.changedHexagramContainer.style.display = 'none';
