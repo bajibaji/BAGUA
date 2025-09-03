@@ -277,10 +277,11 @@
         }
 
         #yao-stats-container {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px;
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%) scale(0.8); width: 90%; max-width: 400px;
             background: rgba(0,0,0,0.5); border-radius: 8px; padding: 10px; border: 1px solid var(--border-color);
             display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0;
             transition: opacity 0.5s ease; color: var(--primary-text);
+            transform-origin: bottom center;
         }
         .yao-stats-title { font-size: 1em; color: var(--title-color); font-weight: bold; }
         .yao-stats-changes { display: flex; justify-content: center; gap: 10px; width: 100%; }
@@ -321,6 +322,11 @@
         #interpretation-modal-overlay.visible #interpretation-modal { transform: scale(1); }
         #modal-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
         #modal-tabs { display: flex; gap: 10px; }
+        #modal-tabs .modal-tab:hover:not(.active) {
+            background-color: transparent !important;
+            border-color: transparent !important;
+            opacity: 0.8;
+        }
         
         /* --- [MODIFIED] 主题切换按钮样式 --- */
         #theme-toggle {
@@ -418,16 +424,17 @@
             transform-origin: left center;
             box-shadow: none;
             transform: none;
-            transition: none;
+            transition: color 0.3s ease;
         }
 
-        #history-button:hover, #history-button:active, #history-button:focus {
+        #history-button:hover, #history-button:active, #history-button:focus, #history-button.active {
             background: transparent;
             border: none;
             outline: none;
             box-shadow: none;
             opacity: 1;
             transform: none;
+            color: var(--title-color);
         }
 
         /* 清除按钮样式 */
@@ -556,9 +563,14 @@
         .modal-tab {
             background: transparent; border: 2px solid transparent; color: var(--primary-text);
             opacity: 0.6; padding: 8px 16px; font-size: 1em; border-radius: 6px;
-            cursor: pointer; transition: all 0.3s ease;
+            cursor: pointer; transition: opacity 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
         .modal-tab.active { opacity: 1; color: var(--title-color); border-bottom-color: var(--title-color); }
+        .modal-tab:hover:not(.active) {
+            background-color: transparent !important;
+            color: var(--primary-text);
+            opacity: 0.8;
+        }
         #modal-close-btn { background: none; border: none; color: var(--primary-text); font-size: 2.5em; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; padding: 0; line-height: 1; }
         #modal-close-btn:hover { opacity: 1; }
         #modal-content { padding: 25px; overflow-y: auto; line-height: 1.9; font-size: 1.1em; white-space: pre-wrap; }
