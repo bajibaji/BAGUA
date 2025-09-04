@@ -22,10 +22,10 @@
             --button-bg: #8c735b;
             --button-hover-bg: #a0856a;
             --hexagram-bg: #333;
-            --changing-yao-color: #ff5555;
+            --changing-yao-color: #b43f3f;
             --glow-color: rgba(212, 175, 55, 0.7);
-            --original-hex-color: #61afef;
-            --changed-hex-color: #e06c75;
+            --original-hex-color: #d1d1d1;
+            --changed-hex-color: #afafaf;
             --stalk-color: #f0e68c; /* 蓍草颜色 */
             --modal-bg: rgba(44, 44, 44, 0.85);
             --modal-border: #555;
@@ -43,8 +43,8 @@
             --hexagram-bg: #f0e8d8;
             --changing-yao-color: #d04848;
             --glow-color: rgba(179, 155, 111, 0.5);
-            --original-hex-color: #3a7ab3;
-            --changed-hex-color: #b34c55;
+            --original-hex-color: #1f1d16;
+            --changed-hex-color: #493c3d;
             --stalk-color: #d4c88c;
             --modal-bg: rgba(255, 255, 255, 0.9);
             --modal-border: #d0c8b0;
@@ -1112,8 +1112,8 @@
                 this.elements.originalHexagram.appendChild(this.createYaoElement(this.getYaoInfo(value)));
                 this.elements.changedHexagram.appendChild(this.createYaoElement(this.getYaoInfo(this.getChangedYaoValue(value))));
             });
-            gsap.from(this.elements.originalHexagram.children, { opacity: 0, stagger: 0.1 });
-            gsap.from(this.elements.changedHexagram.children, { opacity: 0, stagger: 0.1 });
+            gsap.from(this.elements.originalHexagram.children, { duration: 2, opacity: 0, stagger: 0.1 });
+            gsap.from(this.elements.changedHexagram.children, { duration: 2, opacity: 0, stagger: 0.1 });
         },
 
         displayInterpretations: function(originalYaoValues) {
