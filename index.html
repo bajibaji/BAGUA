@@ -308,6 +308,14 @@
                 });
             });
         }
+        
+        // 配置 marked.js 以支持 GFM 和单换行
+        if (window.marked) {
+            marked.setOptions({
+                breaks: true, // 将单个换行符解析为 <br>
+                gfm: true     // 启用 GitHub Flavored Markdown
+            });
+        }
 
         initTheme();
         initChangelogModal();
@@ -369,3 +377,4 @@
     </script>
 </body>
 </html>
+
