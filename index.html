@@ -8,6 +8,9 @@
     <!-- 引入 GSAP 动画库 (用于视差效果) -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 
+    <!-- 引入 marked.js 用于解析 Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
 
@@ -176,7 +179,38 @@
         }
         .modal-close:hover { opacity: 1; }
         #changelog-content {
-            text-align: left; white-space: pre-wrap; word-wrap: break-word;
+            text-align: left;
+            word-wrap: break-word;
+            opacity: 0.8;
+        }
+        /* Markdown 样式 */
+        #changelog-content h1,
+        #changelog-content h2,
+        #changelog-content h3 {
+            color: var(--title-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-top: 24px;
+            margin-bottom: 16px;
+        }
+        #changelog-content a {
+            color: var(--title-color);
+            text-decoration: none;
+        }
+        #changelog-content a:hover {
+            text-decoration: underline;
+        }
+        #changelog-content code {
+            background-color: var(--card-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        #changelog-content blockquote {
+            border-left: 4px solid var(--border-color);
+            padding-left: 15px;
+            margin-left: 0;
+            color: inherit;
             opacity: 0.8;
         }
 
@@ -252,7 +286,7 @@
     <div id="changelog-modal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close">&times;</button>
-            <h2 style="text-align: center;">更新日志</h2>
+            <h2 style="text-align: center; color: var(--title-color);">更新日志</h2>
             <div id="changelog-content"><p>正在加载...</p></div>
         </div>
     </div>
@@ -300,7 +334,7 @@
 
         const openModal = () => {
             modal.classList.add('active');
-            contentDiv.textContent = '正在加载...';
+            contentDiv.innerHTML = '<p>正在加载...</p>';
             fetch('README.md')
                 .then(response => {
                     if (!response.ok) {
@@ -309,7 +343,12 @@
                     return response.text();
                 })
                 .then(text => {
-                    contentDiv.textContent = text;
+                    // 使用 marked.js 将 Markdown 文本转换为 HTML
+                    if (window.marked) {
+                        contentDiv.innerHTML = marked.parse(text);
+                    } else {
+                        contentDiv.textContent = text; // Fallback if marked.js fails to load
+                    }
                 })
                 .catch(error => {
                     console.error('无法获取更新日志:', error);
@@ -330,4 +369,3 @@
     </script>
 </body>
 </html>
-
