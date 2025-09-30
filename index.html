@@ -101,124 +101,93 @@
             margin-bottom: 40px;
         }
         
-        /* --- CSS Animation Section --- */
-        /* Keyframes for fade-in animations */
-        @keyframes fadeIn {
-            to { opacity: 1; }
-        }
-
+        @keyframes fadeIn { to { opacity: 1; } }
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(40px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        /* Apply animations with staggered delays */
         .anim-item {
-            opacity: 0; /* Set initial state */
+            opacity: 0;
             animation: fadeInUp 1.2s ease-out forwards;
         }
         #intro-section h1 { animation-delay: 0.1s; }
         #intro-section .subtitle { animation-delay: 0.1s; }
         .nav-wrapper .nav-card:nth-of-type(1) { animation-delay: 0.2s; }
         .nav-wrapper .nav-card:nth-of-type(2) { animation-delay: 0.3s; }
-        /* --- End CSS Animation Section --- */
 
-        .nav-wrapper {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            flex-wrap: wrap;
-        }
-
+        .nav-wrapper { display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; }
         .nav-card {
-            display: block;
-            text-decoration: none;
-            color: var(--primary-text);
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 30px;
-            width: 280px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
+            display: block; text-decoration: none; color: var(--primary-text);
+            background-color: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 30px; width: 280px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer;
         }
-
         .nav-card:hover {
-            transform: translateY(-10px) scale(1.05);
-            border-color: var(--card-border-hover);
-            background-color: var(--card-hover-bg);
-            box-shadow: 0 10px 30px var(--glow-color);
+            transform: translateY(-10px) scale(1.05); border-color: var(--card-border-hover);
+            background-color: var(--card-hover-bg); box-shadow: 0 10px 30px var(--glow-color);
         }
-
         .nav-card h2 {
-            font-size: 1.8em;
-            color: var(--title-color);
-            margin-top: 0;
-            margin-bottom: 15px;
-            transition: color 0.3s ease;
+            font-size: 1.8em; color: var(--title-color); margin-top: 0;
+            margin-bottom: 15px; transition: color 0.3s ease;
         }
-
         .nav-card p {
-            font-size: 1em;
-            opacity: 0.7;
-            line-height: 1.7;
-            margin: 0;
-            transition: opacity 0.3s ease;
+            font-size: 1em; opacity: 0.7; line-height: 1.7;
+            margin: 0; transition: opacity 0.3s ease;
         }
-
-        .nav-card:hover p {
-            opacity: 0.9;
-        }
+        .nav-card:hover p { opacity: 0.9; }
         
-        #theme-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            box-shadow: none;
-            padding: 0; /* 移除了内边距以消除按钮形状 */
-            font-family: 'Noto Serif SC', serif; /* 明确设置字体以确保一致性 */
+        .top-button {
+            position: fixed; top: 20px; background: transparent; border: none;
+            cursor: pointer; z-index: 100; display: flex; align-items: center;
+            justify-content: center; transition: all 0.3s ease; box-shadow: none;
+            padding: 0; font-family: 'Noto Serif SC', serif; color: var(--primary-text);
+            font-size: 1.0rem; line-height: 1;
         }
-        #theme-toggle:hover {
-            transform: scale(1.1);
-        }
-        #theme-toggle:focus, #theme-toggle:active {
-            outline: none;
-            box-shadow: none;
-        }
-        .theme-icon {
-            font-size: 1.0rem; /* 稍微增大了字体大小 */
-            color: var(--primary-text);
-            line-height: 1;
-        }
-        /* 默认隐藏“日”图标 */
+        .top-button:hover { transform: scale(1.1); }
+        .top-button:focus, .top-button:active { outline: none; box-shadow: none; }
+
+        #theme-toggle { right: 20px; }
+        #changelog-toggle { left: 20px; }
+
         #theme-icon-light { display: none; }
-        /* 亮色模式下，隐藏“夜”图标 */
         .light-theme #theme-icon-dark { display: none; }
-        /* 亮色模式下，显示“日”图标 */
         .light-theme #theme-icon-light { display: inline; }
         
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background-color: var(--container-bg); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 30px; max-width: 90%; width: 700px;
+            max-height: 80vh; overflow-y: auto; position: relative;
+            transform: scale(0.95); transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        .modal-close {
+            position: absolute; top: 15px; right: 20px; background: none; border: none;
+            font-size: 2rem; color: var(--primary-text); cursor: pointer;
+            opacity: 0.7; transition: opacity 0.2s;
+        }
+        .modal-close:hover { opacity: 1; }
+        #changelog-content {
+            text-align: left; white-space: pre-wrap; word-wrap: break-word;
+            opacity: 0.8; font-family: monospace;
+        }
+
         @media (max-width: 768px) {
             .container { padding: 25px; }
             h1 { font-size: 2em; }
             .subtitle { font-size: 1em; }
             .nav-wrapper { flex-direction: column; align-items: center; gap: 20px;}
             .nav-card { width: 90%; max-width: 320px; padding: 25px; }
+            .modal-content { padding: 20px; }
         }
-
     </style>
 </head>
 <body>
@@ -256,9 +225,10 @@
         </svg>
     </div>
 
-    <button id="theme-toggle" title="切换主题">
-        <span class="theme-icon" id="theme-icon-dark">夜</span>
-        <span class="theme-icon" id="theme-icon-light">日</span>
+    <button id="changelog-toggle" class="top-button" title="更新日志">日志</button>
+    <button id="theme-toggle" class="top-button" title="切换主题">
+        <span id="theme-icon-dark">夜</span>
+        <span id="theme-icon-light">日</span>
     </button>
     
     <div class="container" id="main-container">
@@ -279,15 +249,18 @@
         </div>
     </div>
 
+    <div id="changelog-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <h2 style="text-align: center;">更新日志</h2>
+            <div id="changelog-content"><p>正在加载...</p></div>
+        </div>
+    </div>
+
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const mainContainer = document.getElementById('main-container');
 
-        // Note: Entry animations are now handled by pure CSS for better reliability.
-        // The JavaScript below is only for progressive enhancements like the parallax effect.
-
-        // 1. 桌面端鼠标视差效果
-        // Add mouse-based parallax effect for desktop users
         const isMobile = /Mobi|Android/i.test(navigator.userAgent);
         if (!isMobile) {
             window.addEventListener('mousemove', (e) => {
@@ -296,27 +269,22 @@
                 const xOffset = (clientX / innerWidth - 0.5) * 2;
                 const yOffset = (clientY / innerHeight - 0.5) * 2;
                 gsap.to(mainContainer, {
-                    duration: 0.8,
-                    rotationY: xOffset * 10,
-                    rotationX: -yOffset * 10,
-                    ease: "power1.out"
+                    duration: 0.8, rotationY: xOffset * 10,
+                    rotationX: -yOffset * 10, ease: "power1.out"
                 });
             });
         }
+
+        initTheme();
+        initChangelogModal();
     });
 
-    // 2. 主题切换
-    // Theme toggle functionality
     function initTheme() {
         const themeToggle = document.getElementById('theme-toggle');
-        // On page load, check for saved theme in localStorage
         const savedTheme = localStorage.getItem('homepage-theme');
-        
         if (savedTheme === 'light') {
             document.documentElement.classList.add('light-theme');
         }
-        
-        // Add click event to toggle theme
         themeToggle.addEventListener('click', () => {
             document.documentElement.classList.toggle('light-theme');
             const currentTheme = document.documentElement.classList.contains('light-theme') ? 'light' : 'dark';
@@ -324,8 +292,41 @@
         });
     }
 
-    // Initialize theme switcher once the DOM is ready
-    initTheme();
+    function initChangelogModal() {
+        const modal = document.getElementById('changelog-modal');
+        const openBtn = document.getElementById('changelog-toggle');
+        const closeBtn = modal.querySelector('.modal-close');
+        const contentDiv = document.getElementById('changelog-content');
+
+        const openModal = () => {
+            modal.classList.add('active');
+            contentDiv.textContent = '正在加载...';
+            fetch('README.md')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应错误');
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    contentDiv.textContent = text;
+                })
+                .catch(error => {
+                    console.error('无法获取更新日志:', error);
+                    contentDiv.textContent = '无法加载更新日志。请检查文件是否存在或查看控制台错误。';
+                });
+        };
+
+        const closeModal = () => modal.classList.remove('active');
+
+        openBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+    }
     </script>
 </body>
 </html>
