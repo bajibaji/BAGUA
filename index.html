@@ -178,36 +178,37 @@
         
         #theme-toggle {
             position: fixed;
-            top: 15px;
-            right: 15px;
+            top: 20px;
+            right: 20px;
             background: transparent;
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
+            border: none;
             cursor: pointer;
             z-index: 100;
-            width: 40px;
-            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
             box-shadow: none;
-            padding: 8px;
+            padding: 0; /* 移除了内边距以消除按钮形状 */
+            font-family: 'Noto Serif SC', serif; /* 明确设置字体以确保一致性 */
         }
-
         #theme-toggle:hover {
-            transform: scale(1.1) rotate(15deg);
-            border-color: var(--title-color);
+            transform: scale(1.1);
         }
-        
+        #theme-toggle:focus, #theme-toggle:active {
+            outline: none;
+            box-shadow: none;
+        }
         .theme-icon {
-            font-size: 1.2rem;
+            font-size: 1.0rem; /* 稍微增大了字体大小 */
             color: var(--primary-text);
             line-height: 1;
         }
-        
+        /* 默认隐藏“日”图标 */
         #theme-icon-light { display: none; }
+        /* 亮色模式下，隐藏“夜”图标 */
         .light-theme #theme-icon-dark { display: none; }
+        /* 亮色模式下，显示“日”图标 */
         .light-theme #theme-icon-light { display: inline; }
         
         @media (max-width: 768px) {
@@ -328,4 +329,3 @@
     </script>
 </body>
 </html>
-
