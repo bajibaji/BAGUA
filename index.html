@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="大道传真机 - 大衍筮法与诸葛神数在线占卜工具">
+    <meta name="keywords" content="大衍筮法,诸葛神数,周易,占卜,算命">
+    <meta name="author" content="大道传真机">
+    <meta name="theme-color" content="#1a1a1a">
     <title>不可描述的工具</title>
+    
+    <!-- 预加载字体资源 -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap" as="style">
+    <link rel="preload" href="https://fonts.gstatic.com/s/notoserifsc/v22/H4c8BXePl9DZ0Xe7gG9cyOj7mm63ezdLEA.woff2" as="font" type="font/woff2" crossorigin>
     
     <!-- 引入 GSAP 动画库 (用于视差效果) -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
@@ -297,9 +305,22 @@
     document.addEventListener('DOMContentLoaded', () => {
         const mainContainer = document.getElementById('main-container');
 
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
         const isMobile = /Mobi|Android/i.test(navigator.userAgent);
         if (!isMobile) {
-            window.addEventListener('mousemove', (e) => {
+            const handleMouseMove = debounce((e) => {
                 const { clientX, clientY } = e;
                 const { innerWidth, innerHeight } = window;
                 const xOffset = (clientX / innerWidth - 0.5) * 2;
@@ -308,7 +329,9 @@
                     duration: 0.8, rotationY: xOffset * 10,
                     rotationX: -yOffset * 10, ease: "power1.out"
                 });
-            });
+            }, 16); // 约60fps的刷新率
+
+            window.addEventListener('mousemove', handleMouseMove);
         }
         
         // 配置 marked.js 以支持 GFM 和单换行

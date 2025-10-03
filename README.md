@@ -3,8 +3,8 @@
 **仅供起卦占卜使用，解卦请自行找人**
 
 服务器状态：[![Netlify Status](https://api.netlify.com/api/v1/badges/1f379702-6484-4b3a-af2c-e00964033597/deploy-status)](https://app.netlify.com/projects/qigua/deploys)
-
-
+### v0.1.2
+> 优化了PC上显示时,窗口随着鼠标便宜的防抖问题
 ### v0.1.1
 > 新增了更新日志窗口
 > 新增日志显示markdown功能
