@@ -298,12 +298,25 @@
     </div>
 
     <script>
-     document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
         const mainContainer = document.getElementById('main-container');
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
 
         const isMobile = /Mobi|Android/i.test(navigator.userAgent);
         if (!isMobile) {
-            window.addEventListener('mousemove', (e) => {
+            const handleMouseMove = debounce((e) => {
                 const { clientX, clientY } = e;
                 const { innerWidth, innerHeight } = window;
                 const xOffset = (clientX / innerWidth - 0.5) * 2;
@@ -312,7 +325,9 @@
                     duration: 0.8, rotationY: xOffset * 10,
                     rotationX: -yOffset * 10, ease: "power1.out"
                 });
-            });
+            }, 16); // 约60fps的刷新率
+
+            window.addEventListener('mousemove', handleMouseMove);
         }
         
         // 配置 marked.js 以支持 GFM 和单换行
