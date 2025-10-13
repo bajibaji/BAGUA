@@ -1,9 +1,7 @@
 
 **发心不正者结果絮乱不可观**
 **仅供起卦占卜使用，解卦请自行找人**
-
 服务器状态：[![Netlify Status](https://api.netlify.com/api/v1/badges/1f379702-6484-4b3a-af2c-e00964033597/deploy-status)](https://app.netlify.com/projects/qigua/deploys)
-**本项目现在仅有大衍筮法和诸葛神数两个功能，其他术数暂时不考虑，源代码都在这里了反正**
 ### v0.1.2
 > 优化了部分文字显示
 > 优化了PC上显示时,窗口随着鼠标防抖问题
