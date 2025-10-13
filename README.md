@@ -1,9 +1,10 @@
 
 **发心不正者结果絮乱不可观**
 **仅供起卦占卜使用，解卦请自行找人**
-
+简简单单的破逼HTML，没啥技术含量。
 服务器状态：[![Netlify Status](https://api.netlify.com/api/v1/badges/1f379702-6484-4b3a-af2c-e00964033597/deploy-status)](https://app.netlify.com/projects/qigua/deploys)
 ### v0.1.2
+> 校对了部分文字
 > 优化了PC上显示时,窗口随着鼠标便宜的防抖问题
 > 修复了大衍筮法界面历史记录和日夜切换字体大小不一致的问题
 ### v0.1.1

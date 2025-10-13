@@ -8,6 +8,11 @@
     <!-- 引入 GSAP 动画库 -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="data.js" defer></script>
+    
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="../index.html" as="document">
+    <link rel="preload" href="./data.js" as="script">
+    <link rel="prefetch" href="../zhugeshenshu/index.html" as="document">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
@@ -357,11 +362,11 @@
             color: var(--primary-text);
             line-height: 1;
         }
-        /* 默认隐藏“日”图标 */
+        /* 默认隐藏"日"图标 */
         #theme-icon-light { display: none; }
-        /* 亮色模式下，隐藏“夜”图标 */
+        /* 亮色模式下，隐藏"夜"图标 */
         .light-theme #theme-icon-dark { display: none; }
-        /* 亮色模式下，显示“日”图标 */
+        /* 亮色模式下，显示"日"图标 */
         .light-theme #theme-icon-light { display: inline; }
         
         /* 问题输入框样式 */
