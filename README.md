@@ -4,7 +4,8 @@
 
 服务器状态：[![Netlify Status](https://api.netlify.com/api/v1/badges/1f379702-6484-4b3a-af2c-e00964033597/deploy-status)](https://app.netlify.com/projects/qigua/deploys)
 ### v0.1.2
-> 优化了PC上显示时,窗口随着鼠标便宜的防抖问题
+> 优化了部分文字显示
+> 优化了PC上显示时,窗口随着鼠标防抖问题
 > 修复了大衍筮法界面历史记录和日夜切换字体大小不一致的问题
 ### v0.1.1
 > 新增了更新日志窗口
