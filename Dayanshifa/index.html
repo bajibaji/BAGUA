@@ -8,6 +8,8 @@
     <!-- 引入 GSAP 动画库 -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="data.js" defer></script>
+    <!-- [NEW] 引入白话文解释文件 -->
+    <script src="other.js" defer></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
@@ -701,12 +703,16 @@
     <!-- 解释弹窗 HTML -->
     <div id="interpretation-modal-overlay">
         <div id="interpretation-modal">
+            <!-- [MODIFIED] 修改了 modal-header 结构以添加新按钮 -->
             <div id="modal-header">
                 <div id="modal-tabs">
                     <button id="tab-original" class="modal-tab active">本卦</button>
                     <button id="tab-changed" class="modal-tab">变卦</button>
                 </div>
-                <button id="modal-close-btn">&times;</button>
+                <div style="display: flex; align-items: center;">
+                    <button id="vernacular-toggle-btn" class="modal-tab" style="margin-right: 15px; border-bottom: 2px solid transparent;">说人话</button>
+                    <button id="modal-close-btn">&times;</button>
+                </div>
             </div>
             <div id="modal-content">
                 <div id="content-original" class="tab-content active"></div>
@@ -756,6 +762,8 @@
             yaoStatsResult: document.getElementById('yao-stats-result'),
             resultActionsWrapper: document.getElementById('result-actions-wrapper'),
             interpretationModalOverlay: document.getElementById('interpretation-modal-overlay'),
+            // [NEW] 添加新按钮到 elements
+            vernacularToggleBtn: document.getElementById('vernacular-toggle-btn'),
         },
         
         state: {
@@ -769,7 +777,9 @@
             currentOriginalHexKey: null,
             currentChangedHexKey: null,
             currentQuestion: '',
-            divinationHistory: []
+            divinationHistory: [],
+            // [NEW] 添加白话文状态
+            isVernacular: false, 
         },
 
         performChangeWithInteraction: function(totalSticks, clickRatio) {
@@ -1020,12 +1030,65 @@
             this.elements.resultActionsWrapper.appendChild(resetButton);
         },
 
+        // [NEW] 新增函数，用于根据 isVernacular 状态更新弹窗内容
+        updateModalContent: function() {
+            // 更新按钮文本和样式
+            this.elements.vernacularToggleBtn.textContent = this.state.isVernacular ? '看原文' : '说人话';
+            this.elements.vernacularToggleBtn.style.color = this.state.isVernacular ? 'var(--title-color)' : 'var(--primary-text)';
+            this.elements.vernacularToggleBtn.style.borderColor = this.state.isVernacular ? 'var(--title-color)' : 'transparent';
+
+            // 检查白话文数据是否存在
+            const hasVernacular = typeof OTHER_HEXAGRAM_DATA !== 'undefined';
+            //
+            const source = (this.state.isVernacular && hasVernacular) ? OTHER_HEXAGRAM_DATA : HEXAGRAM_DATA;
+
+            const { currentOriginalHexKey, currentChangedHexKey } = this.state;
+            
+            const contentOriginal = document.getElementById('content-original');
+            const contentChanged = document.getElementById('content-changed');
+
+            const originalData = source[currentOriginalHexKey];
+            const changedData = currentChangedHexKey ? source[currentChangedHexKey] : null;
+
+            // 填充本卦内容
+            if (originalData) {
+                contentOriginal.innerHTML = originalData.interpretation;
+            } else {
+                contentOriginal.innerHTML = "<p>暂无解释。</p>";
+            }
+
+            // 填充变卦内容
+            if (changedData) {
+                contentChanged.innerHTML = changedData.interpretation;
+            } else {
+                contentChanged.innerHTML = ""; // 如果没有变卦，清空内容
+            }
+
+            // 如果点击了“说人话”但 other.js 未加载
+            if (this.state.isVernacular && !hasVernacular) {
+                console.warn("other.js is not loaded or OTHER_HEXAGRAM_DATA is not defined.");
+                // 在现有内容前插入提示，而不是完全替换
+                const defaultOriginalData = HEXAGRAM_DATA[currentOriginalHexKey];
+                const defaultChangedData = currentChangedHexKey ? HEXAGRAM_DATA[currentChangedHexKey] : null;
+                
+                contentOriginal.innerHTML = `<p style="color: #f88;">[白话文(other.js)未加载]</p>${defaultOriginalData ? defaultOriginalData.interpretation : ''}`;
+                if (defaultChangedData) {
+                    contentChanged.innerHTML = `<p style="color: #f88;">[白话文(other.js)未加载]</p>${defaultChangedData.interpretation}`;
+                }
+            }
+        },
+
+        // [MODIFIED] 修改 showInterpretationModal 以使用 updateModalContent
         showInterpretationModal: function() {
             // 暂停视差效果
             this.state.isParallaxActive = false;
             gsap.to(this.elements.mainContainer, { duration: 0.5, rotationY: 0, rotationX: 0, ease: "power1.out" });
 
+            // 重置白话文状态
+            this.state.isVernacular = false; 
+
             const { currentOriginalHexKey, currentChangedHexKey } = this.state;
+            // 初始加载时，只从 HEXAGRAM_DATA 获取卦名
             const originalData = HEXAGRAM_DATA[currentOriginalHexKey];
             const changedData = currentChangedHexKey ? HEXAGRAM_DATA[currentChangedHexKey] : null;
 
@@ -1036,17 +1099,20 @@
             const contentOriginal = document.getElementById('content-original');
             const contentChanged = document.getElementById('content-changed');
 
-            contentOriginal.innerHTML = originalData.interpretation;
+            // 更新卦名
             tabOriginal.textContent = `本卦：${originalData.name}`;
 
             if (changedData) {
-                contentChanged.innerHTML = changedData.interpretation;
                 tabChanged.textContent = `变卦：${changedData.name}`;
                 tabChanged.style.display = 'inline-block';
             } else {
                 tabChanged.style.display = 'none';
             }
 
+            // 使用新函数加载默认内容 (isVernacular 此时为 false)
+            this.updateModalContent(); 
+
+            // 设置默认激活的选项卡
             tabOriginal.classList.add('active');
             contentOriginal.classList.add('active');
             tabChanged.classList.remove('active');
@@ -1288,36 +1354,15 @@
         
         // 显示历史记录详情
         showHistoryDetail: function(item) {
+            // 设置当前的卦象 key，以便“说人话”按钮可以工作
+            this.state.currentOriginalHexKey = item.originalHexKey;
+            this.state.currentChangedHexKey = item.changedHexKey;
+
             // 显示解释弹窗
-            const tabOriginal = document.getElementById('tab-original');
-            const tabChanged = document.getElementById('tab-changed');
-            const contentOriginal = document.getElementById('content-original');
-            const contentChanged = document.getElementById('content-changed');
-            
-            const originalData = HEXAGRAM_DATA[item.originalHexKey];
-            const changedData = item.changedHexKey ? HEXAGRAM_DATA[item.changedHexKey] : null;
-            
-            if (!originalData) return;
-            
-            contentOriginal.innerHTML = originalData.interpretation;
-            tabOriginal.textContent = `本卦：${originalData.name}`;
-            
-            if (changedData) {
-                contentChanged.innerHTML = changedData.interpretation;
-                tabChanged.textContent = `变卦：${changedData.name}`;
-                tabChanged.style.display = 'inline-block';
-            } else {
-                tabChanged.style.display = 'none';
-            }
-            
-            tabOriginal.classList.add('active');
-            contentOriginal.classList.add('active');
-            tabChanged.classList.remove('active');
-            contentChanged.classList.remove('active');
-            
-            this.elements.interpretationModalOverlay.classList.add('visible');
+            this.showInterpretationModal();
         },
         
+        // [MODIFIED] 修改 init 函数以包含新按钮的逻辑
         init: function() {
             // 加载历史记录
             this.state.divinationHistory = JSON.parse(localStorage.getItem('bagua-history') || '[]');
@@ -1326,13 +1371,11 @@
             const historyModalOverlay = document.getElementById('history-modal-overlay');
             const historyCloseBtn = document.getElementById('history-close-btn');
 
-            // [FIXED] 历史记录按钮点击事件
             historyButton.addEventListener('click', () => {
                 historyButton.classList.add('active');
                 this.showHistoryModal();
             });
             
-            // [FIXED] 历史记录弹窗关闭事件 (合并)
             const closeHistoryModal = () => {
                 historyModalOverlay.classList.remove('visible');
                 historyButton.classList.remove('active');
@@ -1353,27 +1396,37 @@
 
             this.elements.divineButton.addEventListener('click', (e) => {
                 this.addGlowEffect(e.currentTarget);
-                // 获取问题输入
                 const questionInput = document.getElementById('question-input');
                 this.state.currentQuestion = questionInput.value.trim();
                 this.startDivination();
             });
 
-            // 弹窗事件监听
+            // --- 弹窗事件监听 ---
+
+            // [NEW] "说人话" 按钮点击事件
+            this.elements.vernacularToggleBtn.addEventListener('click', () => {
+                this.state.isVernacular = !this.state.isVernacular; // 切换状态
+                this.updateModalContent(); // 更新两个选项卡的内容
+            });
+
+            // 弹窗关闭 (点击遮罩层)
             this.elements.interpretationModalOverlay.addEventListener('click', (e) => {
                 if (e.target === this.elements.interpretationModalOverlay) {
                     this.elements.interpretationModalOverlay.classList.remove('visible');
-                    // 恢复视差效果
                     this.state.isParallaxActive = true;
-                    this.state.isCalibrated = false; // 重新校准陀螺仪基准
+                    this.state.isCalibrated = false; 
+                    this.state.isVernacular = false; // [NEW] 重置状态
                 }
             });
+            // 弹窗关闭 (点击 "X" 按钮)
             document.getElementById('modal-close-btn').addEventListener('click', () => {
                 this.elements.interpretationModalOverlay.classList.remove('visible');
-                // 恢复视差效果
                 this.state.isParallaxActive = true;
-                this.state.isCalibrated = false; // 重新校准陀螺仪基准
+                this.state.isCalibrated = false; 
+                this.state.isVernacular = false; // [NEW] 重置状态
             });
+
+            // 选项卡切换 (只切换 active class，内容已由 updateModalContent 填充)
             document.getElementById('tab-original').addEventListener('click', () => {
                 document.getElementById('tab-original').classList.add('active');
                 document.getElementById('content-original').classList.add('active');
@@ -1408,7 +1461,14 @@
             app.init();
         } else {
             // 如果 data.js 延迟加载，设置一个短延时
-            setTimeout(() => app.init(), 100);
+            setTimeout(() => {
+                 // 再次检查，以防 data.js 和 other.js 都加载慢
+                 if (typeof app.init === 'function') {
+                    app.init();
+                 } else {
+                    console.error("App 核心未定义。");
+                 }
+            }, 100);
         }
         gsap.globalTimeline.timeScale(2.2);
         
@@ -1435,3 +1495,4 @@
     </script>
 </body>
 </html>
+
