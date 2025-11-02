@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>在线卜卦 (优化版)</title>
+    <title>玄天上帝感应灵签</title>
     
-    <!-- 引入 GSAP 动画库 -->
+    <!-- 引入 GSAP 动画库 (来自参考文件) -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-    <script src="data.js" defer></script>
-    <!-- [NEW] 引入白话文解释文件 -->
-    <script src="other.js" defer></script>
+    <!-- 引入灵签数据文件 -->
+    <script src="lot_data.js" defer></script>
 
     <style>
+        /* --- 完整继承自参考文件的CSS样式 --- */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
 
         :root {
@@ -65,7 +65,8 @@
             -webkit-tap-highlight-color: transparent;
             transition: background-color 0.5s ease;
             overflow: hidden;
-            perspective: 1000px;
+            /* [FIXED] 移除了这个导致选签界面 3D 扭曲的全局 perspective */
+            /* perspective: 1000px; */ 
         }
 
         #background-bagua {
@@ -84,22 +85,6 @@
             from { transform: translate(-50%, -50%) rotate(0deg); }
             to { transform: translate(-50%, -50%) rotate(360deg); }
         }
-
-        body.divining {
-            background-color: #000;
-        }
-        body.divining::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, transparent 40%, #000 85%);
-            z-index: 99;
-            pointer-events: none;
-            opacity: 0;
-            animation: fadeInVignette 1s ease forwards;
-        }
-
-        @keyframes fadeInVignette { to { opacity: 1; } }
 
         .container {
             max-width: 800px; width: 95%; margin: auto; padding: 30px;
@@ -122,60 +107,8 @@
 
         h1, h2, h3 { color: var(--title-color); text-align: center; font-weight: 700; }
         h1 { font-size: 2.2em; margin-bottom: 25px; }
-        h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-top: 40px; margin-bottom: 20px; }
         .section p { text-align: center; line-height: 1.8; font-size: 1.1em; margin-bottom: 20px; }
         
-        .method-selector {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-        .method-selector label {
-            margin: 0 10px;
-            font-size: 1.1em;
-            color: var(--primary-text);
-            opacity: 0.7;
-            transition: opacity 0.3s ease;
-        }
-        .method-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 28px;
-        }
-        .method-switch input { display: none; }
-        
-        /* --- 修复: 切换开关样式 --- */
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--hexagram-bg);
-            border: 1px solid var(--border-color);
-            transition: .4s;
-            border-radius: 28px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 22px; width: 22px;
-            left: 2px;
-            bottom: 2px;
-            background-color: var(--button-bg);
-            transition: .4s;
-            border-radius: 50%;
-        }
-        input:checked + .slider { 
-            background-color: var(--title-color); 
-            border-color: var(--title-color);
-        }
-        input:checked + .slider:before { 
-            transform: translateX(22px); 
-            background-color: var(--bg-color); 
-        }
-        #label-yarrow { opacity: 1; }
-
         .button-wrapper { text-align: center; margin-top: 20px; position: relative; min-height: 60px; display: flex; justify-content: center; align-items: center; gap: 15px;}
         button {
             font-family: inherit; font-size: 1.2em; padding: 12px 25px; background-color: var(--button-bg);
@@ -191,14 +124,6 @@
         }
         button:active:not(:disabled) { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
-
-        /* --- 单独设置卦象解释按钮颜色 --- */
-        #interp-button {
-            background-color: #c93756; /* 朱红色 */
-        }
-        #interp-button:hover:not(:disabled) {
-            background-color: #e04a69; /* 悬停时更亮的朱红色 */
-        }
 
         .button-glow-effect {
             position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
@@ -255,57 +180,6 @@
             100% { transform: rotate(360deg); }
         }
         
-        #interactive-animation-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,6.6);
-            z-index: 100;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
-        }
-        #interactive-animation-container.visible { opacity: 1; pointer-events: all; }
-        #interaction-prompt { color: var(--title-color); font-size: 1.5em; margin-bottom: 20px; text-shadow: 0 0 10px var(--glow-color); min-height: 1.5em;}
-        #stalks-wrapper {
-            width: 80%; max-width: 500px; height: 150px;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; border: 2px dashed var(--border-color); border-radius: 10px;
-            padding: 10px; position: relative;
-        }
-        .stalk {
-            position: absolute; width: 2px; height: 100px;
-            background: linear-gradient(to right, transparent, var(--stalk-color) 25%, var(--stalk-color) 75%, transparent);
-            border-radius: 2px;
-            transform-origin: bottom center;
-            will-change: transform, opacity;
-        }
-
-        #yao-stats-container {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%) scale(0.8); width: 90%; max-width: 400px;
-            background: rgba(0,0,0,0.5); border-radius: 8px; padding: 10px; border: 1px solid var(--border-color);
-            display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0;
-            transition: opacity 0.5s ease; color: var(--primary-text);
-            transform-origin: bottom center;
-        }
-        .yao-stats-title { font-size: 1em; color: var(--title-color); font-weight: bold; }
-        .yao-stats-changes { display: flex; justify-content: center; gap: 10px; width: 100%; }
-        .change-stat { background: rgba(255,255,255,0.1); padding: 5px 8px; border-radius: 4px; font-size: 0.8em; text-align: center; }
-        .change-stat .label { font-size: 0.9em; opacity: 0.7; }
-        .change-stat .value { font-weight: bold; margin-top: 2px; }
-        .yao-stats-result { font-size: 1.1em; font-weight: bold; margin-top: 5px; background: var(--button-bg); padding: 4px 12px; border-radius: 5px; }
-
-        #result-container { display: none; margin-top: 30px; }
-        .hexagram-display { display: flex; justify-content: space-around; margin-top: 20px; padding: 20px; background-color: var(--hexagram-bg); border-radius: 8px; border: 1px solid var(--border-color); }
-        .hexagram { display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .hexagram h3 { font-size: 1.5em; margin-bottom: 15px; }
-        .yao-lines { display: flex; flex-direction: column-reverse; }
-        .hexagram-name { margin-top: 15px; font-size: 1.8em; font-weight: bold; height: 1.5em; letter-spacing: 2px; text-shadow: 0 0 8px rgba(0,0,0,0.5); }
-        #original-hexagram-name { color: var(--original-hex-color); }
-        #changed-hexagram-name { color: var(--changed-hex-color); }
-        .yao { display: flex; justify-content: center; align-items: center; height: 25px; margin: 8px 0; position: relative; width: 120px; }
-        .yao svg { width: 100%; height: 8px; display: block; }
-        .yao svg line { stroke: var(--primary-text); transition: stroke 0.3s ease; }
-        .yao.yao-changing svg line { stroke: var(--changing-yao-color); }
-        .yao-changing-symbol { position: absolute; right: -25px; top: 50%; transform: translateY(-50%); font-size: 1.2em; color: var(--changing-yao-color); font-weight: bold; }
-        
         /* --- 解释弹窗样式 --- */
         #interpretation-modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -322,13 +196,37 @@
             max-height: 80vh; transform: scale(0.9); transition: transform 0.3s ease;
         }
         #interpretation-modal-overlay.visible #interpretation-modal { transform: scale(1); }
-        #modal-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
-        #modal-tabs { display: flex; gap: 10px; }
-        #modal-tabs .modal-tab:hover:not(.active) {
-            background-color: transparent !important;
-            border-color: transparent !important;
-            opacity: 0.8;
+        
+        /* 修改后的 Modal Header */
+        #modal-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 15px 20px; 
+            border-bottom: 1px solid var(--border-color); 
+            flex-shrink: 0; 
         }
+        #modal-title {
+            font-size: 1.3em;
+            color: var(--title-color);
+            font-weight: bold;
+        }
+        #modal-close-btn { 
+            background: none; border: none; color: var(--primary-text); 
+            font-size: 1.8em; cursor: pointer; opacity: 0.7; 
+            transition: opacity 0.2s; padding: 0; line-height: 1; 
+        }
+        #modal-close-btn:hover { opacity: 1; }
+
+        #modal-content { 
+            padding: 25px; 
+            overflow-y: auto; 
+            line-height: 1.9; 
+            font-size: 1.0em; 
+            white-space: normal; /* 覆盖 pre-wrap */
+            animation: contentFadeIn 0.5s ease;
+        }
+        @keyframes contentFadeIn { from { opacity: 0; } to { opacity: 1; } }
         
         /* --- [MODIFIED] 主题切换按钮样式 --- */
         #theme-toggle {
@@ -366,241 +264,358 @@
         /* 亮色模式下，显示“日”图标 */
         .light-theme #theme-icon-light { display: inline; }
         
-        /* 问题输入框样式 */
-        .question-input-container {
-            margin: 20px auto;
-            width: 90%;
-            max-width: 500px;
+
+        /* --- [NEW] 灵签显示样式 --- */
+        .lot-header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
         }
-        #question-input {
+        .lot-title {
+            color: var(--title-color);
+            font-size: 2.2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .lot-subtitle {
+            font-size: 1.6em;
+            opacity: 0.9;
+        }
+        /* [NEW] 灵签标题新样式 */
+        .lot-subtitle strong {
+            font-weight: 700;
+        }
+        .lot-subtitle small {
+            font-size: 0.7em;
+            opacity: 0.8;
+            font-weight: 400;
+            margin-left: 5px;
+        }
+        .lot-poem {
+            font-size: 1.3em;
+            white-space: pre-wrap;
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid var(--border-color);
+            line-height: 2;
+        }
+        .lot-section {
+            margin-bottom: 20px;
+        }
+        .lot-section h3 {
+            color: var(--title-color);
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 5px;
+            text-align: left;
+        }
+        .lot-section-poem {
+            white-space: pre-wrap;
+            line-height: 2;
+            font-size: 1.1em;
+            /* padding-left: 10px; */ /* [MODIFIED] 移除左边距 */
+            opacity: 0.9;
+            text-align: center; /* [MODIFIED] 诗句居中 */
+        }
+        .lot-section-jie {
+            white-space: normal; /* 允许长文本换行 */
+            line-height: 1.8;
+            font-size: 1.1em;
+            text-align: justify;
+            opacity: 0.9;
+        }
+
+        /* --- [MODIFIED] 抽签方式选择 (R2: Toggle Switch) --- */
+        .method-switch-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .method-switch-container label {
+            margin: 0 10px;
+            font-size: 1.1em;
+            color: var(--primary-text);
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+            font-weight: normal;
+        }
+        #label-interactive {
+            opacity: 1;
+            font-weight: bold;
+        }
+        .method-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+        .method-switch input { display: none; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--hexagram-bg);
+            border: 1px solid var(--border-color);
+            transition: .4s;
+            border-radius: 28px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px; width: 22px;
+            left: 2px;
+            bottom: 2px;
+            background-color: var(--button-bg);
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { 
+            background-color: var(--title-color); 
+            border-color: var(--title-color);
+        }
+        input:checked + .slider:before { 
+            transform: translateX(22px); 
+            background-color: var(--bg-color); 
+        }
+        /* --- [DELETED] 移除旧的 .lot-method-tabs 和 .tab-button 样式 --- */
+        
+
+        .method-container {
+            padding: 10px;
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .method-container p {
+            font-size: 1em;
+            opacity: 0.8;
+            margin-bottom: 15px;
+        }
+
+        /* --- [MODIFIED] 方式一 "指定灵签" (R1: Slider) --- */
+        #direct-method-container {
+            /* display: none; */ /* JS会控制 */
+        }
+        .slider-value-display {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--title-color);
+            margin-bottom: 15px;
+            min-height: 1.2em;
+        }
+        .slider-container {
             width: 80%;
             max-width: 400px;
-            margin: 0 auto;
-            padding: 10px 12px;
-            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 10px;
+            background: var(--hexagram-bg);
+            border-radius: 5px;
             border: 1px solid var(--border-color);
-            background: rgba(0,0,0,0.2);
-            color: var(--primary-text);
-            font-family: inherit;
-            font-size: 1em;
-            transition: all 0.3s ease;
-            text-align: center;
-            display: block;
-        }
-        #question-input:focus {
             outline: none;
-            border-color: var(--title-color);
-            box-shadow: 0 0 0 2px var(--glow-color);
+            opacity: 0.8;
+            transition: opacity .2s;
         }
-        @media (max-width: 768px) {
-            #question-input {
-                width: 85%;
-                max-width: 350px;
-                padding: 8px 10px;
-                font-size: 0.95em;
-            }
-        }
-        :root.light-theme #question-input {
-            background: rgba(255,255,255,0.7);
-        }
-        
-        /* --- [REVISED] 历史记录按钮样式 --- */
-        #history-button {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            background: transparent;
-            border: none;
-            color: var(--modal-border); /* 使用标题颜色以保持一致 */
-            font-family: inherit;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 10;
-            padding: 8px 12px;
-            -webkit-tap-highlight-color: transparent;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transform-origin: left center;
-            box-shadow: none;
-            transform: none;
-            transition: color 0.3s ease;
-        }
-
-        #history-button:hover, #history-button:active, #history-button:focus, #history-button.active {
-            background: transparent;
-            border: none;
-            outline: none;
-            box-shadow: none;
+        input[type=range]:hover {
             opacity: 1;
-            transform: none;
-            color: var(--title-color);
         }
-
-        /* 清除按钮样式 */
-        .clear-history-button {
-            display: block;
-            margin: 15px auto;
-            padding: 8px 16px;
-            background-color: #c93756;
-            color: white;
-            border: none;
-            border-radius: 3px;
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            background: var(--button-bg);
+            border: 2px solid var(--bg-color);
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 0.9rem;
-            transition: background-color 0.3s ease;
+            transition: background 0.3s ease;
         }
-        .clear-history-button:hover {
-            background-color: #e04a69;
+        input[type=range]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: var(--button-bg);
+            border: 2px solid var(--bg-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        input[type=range]:active::-webkit-slider-thumb {
+            background: var(--title-color);
+        }
+        input[type=range]:active::-moz-range-thumb {
+            background: var(--title-color);
         }
         
-        #history-modal-overlay {
+        /* --- [DELETED] 移除旧的 .direct-input-wrapper 和 #direct-input 样式 --- */
+
+        .button-small {
+            font-size: 1.1em;
+            padding: 8px 20px;
+        }
+
+        /* --- [NEW] 摇签和选签界面 --- */
+        .fullscreen-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(5px);
-            z-index: 200;
+            background-color: var(--bg-color);
+            z-index: 101; /* 仅次于弹窗 */
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
         }
-        #history-modal-overlay.visible {
+        .fullscreen-overlay.visible {
             opacity: 1;
-            pointer-events: all;
+            visibility: visible;
         }
-        #history-modal {
-            width: 90%;
-            max-width: 600px;
-            background: var(--modal-bg);
-            border-radius: 10px;
-            border: 1px solid var(--modal-border);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            max-height: 80vh;
+
+        /* 摇签界面 */
+        .shuffle-visual-wrapper {
+            height: 250px;
+            width: 100%;
             display: flex;
-            flex-direction: column;
-            transform: scale(0.9);
-            transition: transform 0.3s ease;
-        }
-        #history-modal-overlay.visible #history-modal {
-            transform: scale(1);
-        }
-        #history-header {
-            display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--border-color);
+            perspective: 800px;
+            margin-bottom: 20px;
         }
-        #history-title {
-            font-size: 1.3em;
-            color: var(--title-color);
-            font-weight: bold;
-        }
-        #history-close-btn {
-            background: none;
-            border: none;
-            color: var(--primary-text);
-            font-size: 2em;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-            padding: 0;
-            line-height: 1;
-        }
-        #history-close-btn:hover {
-            opacity: 1;
-        }
-        #history-content {
-            padding: 20px;
-            overflow-y: auto;
-            max-height: calc(80vh - 60px);
-        }
-        .history-item {
-            padding: 15px;
+        #deck-visual {
+            width: 100px;
+            /* height: 150px; */ /* [DELETED] */
+            aspect-ratio: 300 / 495; /* [ADDED] 匹配卡片比例 */
+            background-image: url('card.jpg'); /* [ADDED] (R1: 替换为卡片) */
+            background-size: cover; /* [ADDED] (R1: 替换为卡片) */
+            background-position: center; /* [ADDED] (R1: 替换为卡片) */
+            /* background: var(--button-bg); */ /* [DELETED] */
+            border: 2px solid var(--border-color);
             border-radius: 8px;
-            background: rgba(0,0,0,0.1);
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .history-item:hover {
-            background: rgba(0,0,0,0.2);
-            transform: translateY(-2px);
-        }
-        .history-date {
-            font-size: 0.8em;
-            color: var(--primary-text);
-            opacity: 0.7;
-            margin-bottom: 5px;
-        }
-        .history-question {
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .history-hexagrams {
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
             display: flex;
-            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            /* font-size: 3em; */ /* [DELETED] (R1) */
+            /* color: var(--title-color); */ /* [DELETED] (R1) */
+            transform-style: preserve-3d;
         }
-        .history-hexagram {
-            text-align: center;
-        }
-        .history-hexagram-name {
-            font-size: 1.1em;
-            color: var(--title-color);
-        }
-        .no-history {
-            text-align: center;
-            padding: 30px;
-            color: var(--primary-text);
-            opacity: 0.7;
-        }
-        .modal-tab {
-            background: transparent; border: 2px solid transparent; color: var(--primary-text);
-            opacity: 0.6; padding: 8px 10px; font-size: 0.8em; border-radius: 6px;
-            cursor: pointer; transition: opacity 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-        }
-        .modal-tab.active { opacity: 1; color: var(--title-color); border-bottom-color: var(--title-color); }
-        .modal-tab:hover:not(.active) {
-            background-color: transparent !important;
+        #shuffle-prompt {
+            font-size: 1.3em;
             color: var(--primary-text);
             opacity: 0.8;
+            margin-bottom: 30px;
         }
-        #modal-close-btn { background: none; border: none; color: var(--primary-text); font-size: 1.5em; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; padding: 0; line-height: 1; }
-        #modal-close-btn:hover { opacity: 1; }
-        #modal-content { padding: 25px; overflow-y: auto; line-height: 1.9; font-size: 1.0em; white-space: pre-wrap; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: contentFadeIn 0.5s ease; }
-        @keyframes contentFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 选签界面 */
+        #selection-container {
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            box-sizing: border-box;
+            padding: 20px;
+        }
+        #selection-prompt {
+            font-size: 1.3em;
+            color: var(--primary-text);
+            opacity: 0.8;
+            margin: 15px 0;
+            flex-shrink: 0;
+        }
+        #card-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 80px);  /* 固定每列宽度为80px */
+            gap: 8px;
+            padding: 10px;
+            margin: 0 auto;
+            box-sizing: border-box;
+            width: fit-content;  /* 让容器宽度适应内容 */
+            justify-content: center;
+        }
+        .lot-card {
+            width: 80px;  /* 固定宽度 */
+            height: 132px;  /* 固定高度，保持比例约300:495 */
+            background-image: url('card.jpg');
+            background-size: cover;
+            background-position: center;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            user-select: none;
+            box-sizing: border-box;
+            margin: 0;
+        }
+        .lot-card:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 25px var(--glow-color);
+        }
 
         @media (max-width: 768px) {
+            #card-grid {
+                grid-template-columns: repeat(7, 45px);  /* 移动端更小的固定宽度 */
+                gap: 4px;
+                padding: 5px;
+            }
+            .lot-card {
+                width: 45px;  /* 移动端卡片宽度 */
+                height: 74px;  /* 保持比例的高度 */
+                border-radius: 4px;
+            }
             body { align-items: center; padding: 0; }
             .container { padding: 15px; margin: 0 2.5%; width: 95%; border-radius: 8px; overflow: auto; }
             h1 { font-size: 1.5em; }
-            .hexagram-display { flex-direction: row; justify-content: space-around; align-items: flex-start; padding: 10px 5px; }
-            .hexagram { flex: 1; min-width: 0; padding: 0 5px; }
-            .hexagram h3 { font-size: 1em; margin-bottom: 6px; }
-            .hexagram-name { font-size: 1.1em; margin-top: 6px; word-break: break-all; }
-            .yao { width: 100%; max-width: 80px; height: 14px; margin: 3px auto; }
-            .yao svg { height: 3px; }
-            .yao-changing-symbol { font-size: 0.8em; right: -16px;}
-            #yao-stats-container { padding: 8px; gap: 5px; }
-            .change-stat { font-size: 0.7em; padding: 4px 6px; }
-            .yao-stats-result { font-size: 1em; }
             button { font-size: 1em; padding: 10px 18px; }
+            #modal-content { padding: 15px; }
+            .lot-title { font-size: 1.8em; }
+            .lot-subtitle { font-size: 1.3em; }
+            .lot-poem { font-size: 1.1em; }
+            .lot-section h3 { font-size: 1.1em; }
+            .lot-section-poem, .lot-section-jie { font-size: 1.0em; }
+            
+            /* [NEW] 响应式调整 */
+            .tab-button { font-size: 1em; padding: 8px 10px; }
+            .method-container { min-height: 120px; }
+            /* [DELETED] */
+            /* .direct-input-wrapper { flex-direction: column; width: 80%; } */
+            /* #direct-input { width: 100%; box-sizing: border-box; } */
+            .button-small { font-size: 1em; }
+            #card-grid {
+                /* grid-template-columns: repeat(auto-fit, minmax(55px, 1fr)); */ /* [DELETED] (R3: 7x7 Grid) */
+                gap: 2px; /* [MODIFIED] (R3: 调至最紧凑) */
+                padding: 2px; /* [MODIFIED] 减小内边距 */
+                width: 95vw; /* [MODIFIED] (R3: 7x7 Grid) */
+                /* max-width: 100%; */ /* [MODIFIED] 移除，让全局的 700px 生效 */
+            }
+            .lot-card { 
+
+                border-radius: 4px; 
+            }
+            #selection-prompt { font-size: 1.1em; }
         }
     </style>
 </head>
 <body>
     
-    <!-- 添加页面加载动画 -->
+    <!-- 页面加载动画 -->
     <div id="page-loader">
         <div class="loader-content">
             <div class="loader-symbol">☯</div>
@@ -608,7 +623,9 @@
         </div>
     </div>
 
+    <!-- 背景八卦图 -->
     <div id="background-bagua">
+        <!-- SVG 内容与参考文件相同 -->
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" color="var(--primary-text)">
             <defs>
                 <g id="yang-line"><path d="M -4.5,0 L 4.5,0" stroke-width="1.5" stroke-linecap="butt"></path></g>
@@ -640,610 +657,424 @@
             </g>
         </svg>
     </div>
-    <!-- [MODIFIED] 主题切换按钮 -->
+    
+    <!-- 主题切换按钮 -->
     <button id="theme-toggle" title="切换主题">
         <span class="theme-icon" id="theme-icon-dark">夜</span>
         <span class="theme-icon" id="theme-icon-light">日</span>
     </button>
     
+    <!-- 主容器 -->
     <div class="container" id="main-container">
         <div id="intro-section">
-            <h1><b>大衍筮法 · 在线卜卦</b></h1>
+            <h1><b>玄天上帝感应灵签</b></h1>
             <div class="section">
-                <p><i>心诚则灵，一事一问</i></p>
-            </div>
-            
-            <!-- 添加问题输入框 -->
-            <div class="question-input-container">
-                <input type="text" id="question-input" placeholder="请输入您想问的问题…也可以不输" maxlength="50">
-            </div>
-            
-            <div class="method-selector">
-                <label id="label-random">随机数法</label>
-                <label class="method-switch">
-                    <input type="checkbox" id="method-toggle" checked>
-                    <span class="slider"></span>
-                </label>
-                <label id="label-yarrow"><b>大衍筮法</b></label>
-            </div>
-        </div>
-        
-        <div class="button-wrapper">
-            <button id="divine-button">开始卜卦</button>
-        </div>
+                <!-- [MODIFIED] 更新提示 -->
+                <p><i>心诚则灵，请选择求签方式</i></p>
 
-        <div id="result-container">
-            <div class="hexagram-display">
-                <div class="hexagram">
-                    <h3>本卦</h3>
-                    <div id="original-hexagram" class="yao-lines"></div>
-                    <div id="original-hexagram-name" class="hexagram-name"></div>
-                </div>
-                <div class="hexagram" id="changed-hexagram-container">
-                    <h3>变卦</h3>
-                    <div id="changed-hexagram" class="yao-lines"></div>
-                    <div id="changed-hexagram-name" class="hexagram-name"></div>
+                <!-- [MODIFIED] 抽签方式选择 (R2: Toggle Switch) -->
+                <div class="method-switch-container">
+                    <label id="label-interactive">诚心摇签</label>
+                    <label class="method-switch">
+                        <input type="checkbox" id="method-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <label id="label-direct">指定灵签</label>
                 </div>
             </div>
-            <!-- 结果页按钮容器 -->
-            <div id="result-actions-wrapper" class="button-wrapper"></div>
+            
+            <!-- [MODIFIED] 方式一：指定灵签 (R1: Slider) -->
+            <div id="direct-method-container" class="method-container" style="display: none;">
+                <p>请滑动选择 1 至 49 之间的数字</p>
+                <div class="slider-value-display">
+                    <span id="slider-value">1</span>
+                </div>
+                <div class="slider-container">
+                    <input type="range" min="1" max="49" value="1" id="direct-slider">
+                </div>
+                <div class="button-wrapper" style="margin-top: 15px;">
+                    <button id="direct-submit-button" class="button-small">查看</button>
+                </div>
+            </div>
+
+            <!-- [NEW] 方式二：诚心摇签 (原按钮) -->
+            <div id="interactive-method-container" class="method-container">
+                <p><i>默念所求之事，开始摇签</i></p>
+                <div class="button-wrapper" style="margin-top: 0;">
+                    <button id="draw-button">诚心抽签</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [NEW] 摇签动画容器 -->
+    <div id="shuffle-container" class="fullscreen-overlay">
+        <div class="shuffle-visual-wrapper">
+            <div id="deck-visual"></div> <!-- [MODIFIED] (R1: 移除 "签" 字) -->
+        </div>
+        <div id="shuffle-prompt">正在为您洗牌...</div>
+        <div class="button-wrapper">
+            <button id="stop-shuffle-button">停止摇签</button>
+        </div>
+    </div>
+
+    <!-- [NEW] 选签容器 -->
+    <div id="selection-container" class="fullscreen-overlay">
+        <div id="selection-prompt">请凭直觉点选一根灵签</div>
+        <div id="card-grid">
+            <!-- 49张卡片将由JS生成 -->
         </div>
     </div>
     
-    <div id="interactive-animation-container">
-        <div id="interaction-prompt"></div>
-        <div id="stalks-wrapper"></div>
-        <div id="yao-stats-container">
-            <div class="yao-stats-title">本爻演算</div>
-            <div id="yao-stats-changes" class="yao-stats-changes"></div>
-            <div id="yao-stats-result" class="yao-stats-result"></div>
-        </div>
-    </div>
-
     <!-- 解释弹窗 HTML -->
     <div id="interpretation-modal-overlay">
         <div id="interpretation-modal">
-            <!-- [MODIFIED] 修改了 modal-header 结构以添加新按钮 -->
             <div id="modal-header">
-                <div id="modal-tabs">
-                    <button id="tab-original" class="modal-tab active">本卦</button>
-                    <button id="tab-changed" class="modal-tab">变卦</button>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <button id="vernacular-toggle-btn" class="modal-tab" style="margin-right: 15px; border-bottom: 2px solid transparent;">说人话</button>
-                    <button id="modal-close-btn">&times;</button>
-                </div>
+                <div id="modal-title">签文详情</div>
+                <button id="modal-close-btn">&times;</button>
             </div>
             <div id="modal-content">
-                <div id="content-original" class="tab-content active"></div>
-                <div id="content-changed" class="tab-content"></div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 历史记录按钮 -->
-    <button id="history-button" title="查看历史记录">
-        歷史記錄
-    </button>
-    
-    <!-- 历史记录模态框 -->
-    <div id="history-modal-overlay">
-        <div id="history-modal">
-            <div id="history-header">
-                <div id="history-title">卜卦历史记录</div>
-                <button id="history-close-btn">&times;</button>
-            </div>
-            <div id="history-content">
-                <!-- 历史记录内容将通过JavaScript动态生成 -->
+                <!-- 灵签内容将动态插入此处 -->
             </div>
         </div>
     </div>
 
     <script>
+    // 应用程序对象
     const app = {
         elements: {
-            divineButton: document.getElementById('divine-button'),
-            interactiveContainer: document.getElementById('interactive-animation-container'),
-            interactionPrompt: document.getElementById('interaction-prompt'),
-            stalksWrapper: document.getElementById('stalks-wrapper'),
-            resultContainer: document.getElementById('result-container'),
-            originalHexagram: document.getElementById('original-hexagram'),
-            changedHexagram: document.getElementById('changed-hexagram'),
-            originalHexagramName: document.getElementById('original-hexagram-name'),
-            changedHexagramName: document.getElementById('changed-hexagram-name'),
+            // 主容器
             mainContainer: document.getElementById('main-container'),
-            introSection: document.getElementById('intro-section'),
-            changedHexagramContainer: document.getElementById('changed-hexagram-container'),
+            
+            // [MODIFIED] 抽签方式 (R2: Toggle)
             methodToggle: document.getElementById('method-toggle'),
-            labelYarrow: document.getElementById('label-yarrow'),
-            labelRandom: document.getElementById('label-random'),
-            yaoStatsContainer: document.getElementById('yao-stats-container'),
-            yaoStatsChanges: document.getElementById('yao-stats-changes'),
-            yaoStatsResult: document.getElementById('yao-stats-result'),
-            resultActionsWrapper: document.getElementById('result-actions-wrapper'),
-            interpretationModalOverlay: document.getElementById('interpretation-modal-overlay'),
-            // [NEW] 添加新按钮到 elements
-            vernacularToggleBtn: document.getElementById('vernacular-toggle-btn'),
+            labelInteractive: document.getElementById('label-interactive'),
+            labelDirect: document.getElementById('label-direct'),
+            interactiveMethodContainer: document.getElementById('interactive-method-container'),
+            directMethodContainer: document.getElementById('direct-method-container'),
+            
+            // [MODIFIED] 方式一：指定 (R1: Slider)
+            directSlider: document.getElementById('direct-slider'),
+            sliderValue: document.getElementById('slider-value'),
+            directSubmitButton: document.getElementById('direct-submit-button'),
+            
+            // 方式二：交互
+            drawButton: document.getElementById('draw-button'),
+            shuffleContainer: document.getElementById('shuffle-container'),
+            deckVisual: document.getElementById('deck-visual'),
+            stopShuffleButton: document.getElementById('stop-shuffle-button'),
+            selectionContainer: document.getElementById('selection-container'),
+            cardGrid: document.getElementById('card-grid'),
+
+            // 结果弹窗
+            modalOverlay: document.getElementById('interpretation-modal-overlay'),
+            modalTitle: document.getElementById('modal-title'),
+            modalContent: document.getElementById('modal-content'),
+            modalCloseBtn: document.getElementById('modal-close-btn'),
         },
         
         state: {
-            divinationData: [],
-            isMobile: /Mobi|Android/i.test(navigator.userAgent),
-            divinationMethod: 'yarrow',
-            isParallaxActive: true,
-            isCalibrated: false,
-            baseBeta: 0,
-            baseGamma: 0,
-            currentOriginalHexKey: null,
-            currentChangedHexKey: null,
-            currentQuestion: '',
-            divinationHistory: [],
-            // [NEW] 添加白话文状态
-            isVernacular: false, 
+            isShuffling: false,
+            lotteryDeck: [],
+            shuffleInterval: null,
+            visualShuffleTween: null,
         },
 
-        performChangeWithInteraction: function(totalSticks, clickRatio) {
-            if (totalSticks <= 1) return { total: totalSticks, left: totalSticks, right: 0, leftRem: totalSticks, rightRem: 0, removed: 0, remaining: totalSticks };
-            let leftPile = Math.round(totalSticks * clickRatio);
-            if (leftPile < 1) leftPile = 1;
-            if (leftPile >= totalSticks) leftPile = totalSticks - 1;
-            const rightPile = totalSticks - leftPile;
-            const rightPileForCounting = rightPile - 1;
-            let leftRemainder = leftPile % 4;
-            if (leftRemainder === 0) leftRemainder = 4;
-            let rightRemainder = rightPileForCounting % 4;
-            if (rightRemainder === 0) rightRemainder = 4;
-            const totalRemoved = 1 + leftRemainder + rightRemainder;
-            const remainingSticks = totalSticks - totalRemoved;
-            return { total: totalSticks, left: leftPile, right: rightPile, leftRem: leftRemainder, rightRem: rightRemainder, removed: totalRemoved, remaining: remainingSticks };
+        // [MODIFIED] 启动指定签文流程
+        startDirectProcess: function() {
+            // [ADDED] (R1)
+            this.addGlowEffect(this.elements.directSubmitButton);
+
+            const num = parseInt(this.elements.directSlider.value, 10); // [MODIFIED] (R1)
+            
+            // [DELETED] (R1) 移除输入框验证
+            
+            // 检查数据
+            if (typeof LOT_DATA === 'undefined' || LOT_DATA.length === 0) {
+                console.error("灵签数据(lot_data.js)未加载!");
+                return;
+            }
+
+            const lot = LOT_DATA[num - 1]; // 数组索引从0开始
+            this.displayLotResult(lot);
         },
-        
-        getChangeFromUser: function(totalSticks, changeName) {
-            return new Promise(resolve => {
-                this.elements.interactionPrompt.textContent = `第 ${changeName} 变，请点击分蓍草`;
-                this.elements.stalksWrapper.innerHTML = '';
-                
-                // 使用 DocumentFragment 批量创建和添加蓍草
-                const fragment = document.createDocumentFragment();
-                const stalks = [];
-                
-                // 预先计算所有蓍草的随机旋转和位移值，避免在动画中重复计算
-                const randomValues = Array.from({ length: totalSticks }, () => ({
-                    yOffset: (Math.random() - 0.5) * 10,
-                    rotation: (Math.random() - 0.5) * 15
-                }));
-                
-                for (let i = 0; i < totalSticks; i++) {
-                    const stalk = document.createElement('div');
-                    stalk.className = 'stalk';
-                    fragment.appendChild(stalk);
-                    stalks.push(stalk);
+
+        // [MODIFIED] 启动交互式抽签流程
+        startInteractiveProcess: function() {
+            if (this.state.isShuffling) return;
+            
+            // 确保完全重置所有状态
+            gsap.killTweensOf([
+                this.elements.mainContainer,
+                this.elements.shuffleContainer,
+                this.elements.selectionContainer
+            ]);
+            
+            this.state.isShuffling = true;
+            this.addGlowEffect(this.elements.drawButton);
+            this.elements.drawButton.disabled = true;
+
+            // 隐藏主容器，显示摇签容器
+            gsap.to(this.elements.mainContainer, { 
+                opacity: 0, 
+                duration: 0.5,
+                onComplete: () => {
+                    this.elements.mainContainer.style.display = 'none';
+                    this.elements.shuffleContainer.classList.add('visible');
+                    this.elements.shuffleContainer.style.opacity = '1';
                 }
-                
-                // 一次性将所有蓍草添加到 DOM
-                this.elements.stalksWrapper.appendChild(fragment);
-                
-                // 使用预计算的随机值进行动画
-                gsap.fromTo(stalks, 
-                    { x: 0, y: 0, rotation: 0 }, 
-                    { 
-                        x: (i) => (i - totalSticks / 2) * (this.elements.stalksWrapper.offsetWidth * 0.8 / totalSticks),
-                        y: (i) => randomValues[i].yOffset,
-                        rotation: (i) => randomValues[i].rotation,
-                        duration: 0.5,
-                        ease: 'power2.out'
-                    });
-                
-                    const clickHandler = (e) => {
-                    this.elements.stalksWrapper.removeEventListener('click', clickHandler);
-                    this.elements.stalksWrapper.style.cursor = 'default';
-                    
-                    const rect = this.elements.stalksWrapper.getBoundingClientRect();
-                    const clickX = e.clientX - rect.left;
-                    const clickRatio = clickX / rect.width;
-                    const changeResult = this.performChangeWithInteraction(totalSticks, clickRatio);
-                    
-                    this.elements.interactionPrompt.textContent = `天: ${changeResult.left}, 地: ${changeResult.right}`;
-                    
-                    const tl = gsap.timeline({ onComplete: () => resolve(changeResult) });
-                    const leftStalks = stalks.slice(0, changeResult.left);
-                    const rightStalks = stalks.slice(changeResult.left);
+            });
 
-                    tl.to(leftStalks, { x: '-=100', rotation: -20, duration: 0.3, ease: 'power2.inOut', stagger: 0.005 });
-                    tl.to(rightStalks, { x: '+=100', rotation: 20, duration: 0.3, ease: 'power2.inOut', stagger: 0.005 }, '<');
-                    const heldStalk = rightStalks.pop();
-                    tl.to(heldStalk, { y: -80, x: '+=20', rotation: 15, duration: 0.3, ease: 'power2.out' }, '-=0.2');
-                    const leftRemainderStalks = leftStalks.slice(0, changeResult.leftRem);
-                    const rightRemainderStalks = rightStalks.slice(0, changeResult.rightRem);
-                    const nonRemainderLeft = leftStalks.filter(s => !leftRemainderStalks.includes(s));
-                    const nonRemainderRight = rightStalks.filter(s => !rightRemainderStalks.includes(s));
-                    tl.to([...nonRemainderLeft, ...nonRemainderRight], { opacity: 0.3, duration: 0.2 }, '+=0.1');
-                    tl.to(leftRemainderStalks, { x: '-=30', scale: 1.2, duration: 0.3, ease: 'power2.out' }, '<');
-                    tl.to(rightRemainderStalks, { x: '+=30', scale: 1.2, duration: 0.3, ease: 'power2.out' }, '<');
-                    const allRemainders = [heldStalk, ...leftRemainderStalks, ...rightRemainderStalks];
-                    const stalksWrapperRect = this.elements.stalksWrapper.getBoundingClientRect();
-                    const targetX = (window.innerWidth / 2) - (stalksWrapperRect.left + stalksWrapperRect.width / 2);
-                    const targetY = (window.innerHeight / 2) - (stalksWrapperRect.top + stalksWrapperRect.height / 2);
-                    tl.to(allRemainders, { x: targetX, y: targetY, scale: 1, duration: 0.5, stagger: 0.05, ease: 'power2.inOut' }, '-=0.3');
-                    tl.to(allRemainders, { y: `+=${window.innerHeight / 2 + 100}`, opacity: 0, duration: 0.6, stagger: 0.03, ease: 'power2.in' });
-                    const remainingStalks = stalks.filter(s => !allRemainders.includes(s));
-                    tl.to(remainingStalks, { x: 0, rotation: 0, opacity: 1, duration: 0.4, ease: 'power2.inOut' }, '-=0.5');
-                };
-                this.elements.stalksWrapper.addEventListener('click', clickHandler);
-                this.elements.stalksWrapper.style.cursor = 'pointer';
+            // 初始化签筒 (0-48)
+            this.state.lotteryDeck = Array.from({ length: 49 }, (_, i) => i);
+            
+            // 启动逻辑洗牌 (每 111ms 洗一次, 约 9次/秒)
+            this.state.shuffleInterval = setInterval(() => this.riffleShuffle(), 111); // [MODIFIED] (R2: 加快速度)
+
+            // 启动视觉洗牌动画
+            this.state.visualShuffleTween = gsap.to(this.elements.deckVisual, { 
+                duration: 0.1, 
+                x: () => Math.random() * 20 - 10, 
+                rotationY: () => Math.random() * 30 - 15,
+                rotationX: () => Math.random() * 10 - 5,
+                yoyo: true, 
+                repeat: -1,
+                ease: 'power1.inOut'
             });
         },
 
-        generateYaoInteractively: async function() {
-            let sticks = 49;
-            const changes = [];
+        // 核心洗牌逻辑 (Riffle Shuffle)
+        riffleShuffle: function() {
+            let deck = this.state.lotteryDeck;
+            // 随机分割点，模拟不均匀
+            let splitPoint = Math.floor(deck.length / 2) + Math.floor(Math.random() * 6) - 3; // 22-27之间
+            let a = deck.slice(0, splitPoint);
+            let b = deck.slice(splitPoint);
             
-            this.elements.yaoStatsChanges.innerHTML = '';
-            this.elements.yaoStatsResult.innerHTML = '';
-            gsap.to(this.elements.yaoStatsContainer, { opacity: 1, duration: 0.3 });
-
-            for (let i = 0; i < 3; i++) {
-                const changeNames = ['一', '二', '三'];
-                const changeResult = await this.getChangeFromUser(sticks, changeNames[i]);
-                sticks = changeResult.remaining;
-                changes.push(changeResult);
-
-                const changeStatEl = document.createElement('div');
-                changeStatEl.className = 'change-stat';
-                changeStatEl.innerHTML = `<div class="label">第${changeNames[i]}变</div><div class="value">余 ${changeResult.remaining}</div>`;
-                this.elements.yaoStatsChanges.appendChild(changeStatEl);
-                gsap.from(changeStatEl, { opacity: 0, scale: 0.5, duration: 0.4, ease: 'back.out' });
-            }
-            const yaoValue = sticks / 4;
-            const yaoInfo = this.getYaoInfo(yaoValue);
-            
-            this.elements.yaoStatsResult.textContent = `本爻蓍草: ${yaoValue * 4} 根`;
-            gsap.from(this.elements.yaoStatsResult, { opacity: 0, y: 10, duration: 0.4 });
-
-            return { value: yaoValue, changes: changes, info: yaoInfo };
-        },
-
-        animateFinalHexagramFormation: async function(yaoInfos) {
-            const finalStalks = Array.from(this.elements.stalksWrapper.querySelectorAll('.stalk')).filter(s => gsap.getProperty(s, "opacity") > 0);
-            const flyingHexagram = document.createElement('div');
-            flyingHexagram.style.position = 'absolute';
-            flyingHexagram.style.display = 'flex';
-            flyingHexagram.style.flexDirection = 'column-reverse';
-            yaoInfos.forEach(info => {
-                const yaoEl = this.createYaoElement(info);
-                flyingHexagram.appendChild(yaoEl);
-            });
-            this.elements.stalksWrapper.appendChild(flyingHexagram);
-            flyingHexagram.style.opacity = 0;
-            const tl = gsap.timeline();
-            tl.to(this.elements.yaoStatsContainer, { opacity: 0, duration: 0.3 });
-            tl.to(finalStalks, { x: 0, y: 0, opacity: 0, scale: 0, duration: 0.8, stagger: 0.02, ease: 'power2.in' }, "<");
-            tl.to(flyingHexagram, { opacity: 1, duration: 0.5 }, '-=0.5');
-            const viewportCenterX = window.innerWidth / 2;
-            const viewportCenterY = window.innerHeight / 2;
-            const wrapperRect = this.elements.stalksWrapper.getBoundingClientRect();
-            tl.to(flyingHexagram, { x: viewportCenterX - wrapperRect.left - wrapperRect.width / 2, y: viewportCenterY - wrapperRect.top - wrapperRect.height / 2, scale: 0, opacity: 0, duration: 1.2, ease: 'power3.in' }, '+=0.5');
-            await new Promise(resolve => tl.eventCallback('onComplete', resolve));
-        },
-
-        runYarrowDivination: async function() {
-            this.elements.interactiveContainer.classList.add('visible');
-            this.elements.yaoStatsContainer.style.opacity = 0;
-            this.state.divinationData = [];
-            const originalYaoValues = [];
-            const originalYaoInfos = [];
-            const yaoNames = ['初', '二', '三', '四', '五', '上'];
-            for (let i = 0; i < 6; i++) {
-                this.elements.interactionPrompt.textContent = `求 ${yaoNames[i]} 爻`;
-                await new Promise(r => setTimeout(r, 200));
-                const yaoResult = await this.generateYaoInteractively();
-                originalYaoValues.push(yaoResult.value);
-                originalYaoInfos.push(yaoResult.info);
-                this.state.divinationData.push(yaoResult);
-            }
-            this.elements.interactionPrompt.textContent = '卦象生成...';
-            await this.animateFinalHexagramFormation(originalYaoInfos);
-            this.elements.interactiveContainer.classList.remove('visible');
-            return originalYaoValues;
-        },
-
-        runRandomDivination: async function() {
-            this.state.divinationData = [];
-            const originalYaoValues = [];
-            for (let i = 0; i < 6; i++) {
-                let sticks = 49;
-                const changes = [];
-                for (let j = 0; j < 3; j++) {
-                    const randomRatio = 0.3 + Math.random() * 0.4;
-                    const changeResult = this.performChangeWithInteraction(sticks, randomRatio);
-                    sticks = changeResult.remaining;
-                    changes.push(changeResult);
+            const newDeck = [];
+            // 交错合并
+            while (a.length > 0 || b.length > 0) {
+                // 模拟洗牌时几张牌一起落下
+                let pullCountA = Math.random() > 0.5 ? 1 : Math.floor(Math.random() * 2) + 1;
+                let pullCountB = Math.random() > 0.5 ? 1 : Math.floor(Math.random() * 2) + 1;
+                
+                if (a.length > 0) {
+                    newDeck.push(...a.splice(0, pullCountA));
                 }
-                const yaoValue = sticks / 4;
-                originalYaoValues.push(yaoValue);
-                this.state.divinationData.push({ value: yaoValue, changes: changes, info: this.getYaoInfo(yaoValue) });
-            }
-            return originalYaoValues;
-        },
-
-        startDivination: async function() {
-            if (this.state.isMobile && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try { await DeviceOrientationEvent.requestPermission(); } catch (error) { console.error('陀螺仪权限请求失败:', error); }
-            }
-            this.elements.divineButton.disabled = true;
-            this.elements.divineButton.innerHTML = '推演中...<span class="loader"></span>';
-            this.elements.resultContainer.style.display = 'none';
-            this.elements.originalHexagram.innerHTML = '';
-            this.elements.changedHexagram.innerHTML = '';
-
-            // [MODIFIED] 如果是大衍筮法，则暂停视差效果并重置窗口位置
-            if (this.state.divinationMethod === 'yarrow') {
-                this.state.isParallaxActive = false;
-                gsap.to(this.elements.mainContainer, { duration: 0.5, rotationY: 0, rotationX: 0, ease: "power1.out" });
-            }
-
-            gsap.to(this.elements.mainContainer, { opacity: 0, duration: 0.5 });
-            document.body.classList.add('divining');
-            let originalYaoValues;
-            if (this.state.divinationMethod === 'yarrow') {
-                originalYaoValues = await this.runYarrowDivination();
-            } else {
-                originalYaoValues = await this.runRandomDivination();
-            }
-
-            // [MODIFIED] 推演结束后，重新激活视差效果
-            this.state.isParallaxActive = true;
-            this.state.isCalibrated = false; // 强制重新校准陀螺仪基准，以获得平滑的过渡
-
-            document.body.classList.remove('divining');
-            this.displayHexagrams(originalYaoValues);
-            this.displayInterpretations(originalYaoValues);
-            this.elements.introSection.style.display = 'none';
-            this.elements.divineButton.parentElement.style.display = 'none';
-            this.elements.resultContainer.style.display = 'block';
-            gsap.to(this.elements.mainContainer, { opacity: 1, duration: 0.5 });
-            this.setupResultActions();
-        },
-
-        setupResultActions: function() {
-            this.elements.resultActionsWrapper.innerHTML = '';
-            const interpButton = document.createElement('button');
-            interpButton.id = 'interp-button';
-            interpButton.textContent = '卦象解释';
-            interpButton.addEventListener('click', (e) => {
-                this.addGlowEffect(e.currentTarget);
-                this.showInterpretationModal();
-            });
-            this.elements.resultActionsWrapper.appendChild(interpButton);
-            const resetButton = document.createElement('button');
-            resetButton.id = 'reset-button';
-            resetButton.textContent = '再算一卦';
-            resetButton.addEventListener('click', (e) => {
-                this.addGlowEffect(e.currentTarget);
-                this.elements.resultContainer.style.display = 'none';
-                this.elements.introSection.style.display = 'block';
-                this.elements.divineButton.parentElement.style.display = 'flex';
-                this.elements.divineButton.innerHTML = '开始卜卦';
-                this.elements.divineButton.disabled = false;
-                this.state.isCalibrated = false;
-            });
-            this.elements.resultActionsWrapper.appendChild(resetButton);
-        },
-
-        // [NEW] 新增函数，用于根据 isVernacular 状态更新弹窗内容
-        updateModalContent: function() {
-            // 更新按钮文本和样式
-            this.elements.vernacularToggleBtn.textContent = this.state.isVernacular ? '看原文' : '说人话';
-            this.elements.vernacularToggleBtn.style.color = this.state.isVernacular ? 'var(--title-color)' : 'var(--primary-text)';
-            this.elements.vernacularToggleBtn.style.borderColor = this.state.isVernacular ? 'var(--title-color)' : 'transparent';
-
-            // 检查白话文数据是否存在
-            const hasVernacular = typeof OTHER_HEXAGRAM_DATA !== 'undefined';
-            //
-            const source = (this.state.isVernacular && hasVernacular) ? OTHER_HEXAGRAM_DATA : HEXAGRAM_DATA;
-
-            const { currentOriginalHexKey, currentChangedHexKey } = this.state;
-            
-            const contentOriginal = document.getElementById('content-original');
-            const contentChanged = document.getElementById('content-changed');
-
-            const originalData = source[currentOriginalHexKey];
-            const changedData = currentChangedHexKey ? source[currentChangedHexKey] : null;
-
-            // 填充本卦内容
-            if (originalData) {
-                contentOriginal.innerHTML = originalData.interpretation;
-            } else {
-                contentOriginal.innerHTML = "<p>暂无解释。</p>";
-            }
-
-            // 填充变卦内容
-            if (changedData) {
-                contentChanged.innerHTML = changedData.interpretation;
-            } else {
-                contentChanged.innerHTML = ""; // 如果没有变卦，清空内容
-            }
-
-            // 如果点击了“说人话”但 other.js 未加载
-            if (this.state.isVernacular && !hasVernacular) {
-                console.warn("other.js is not loaded or OTHER_HEXAGRAM_DATA is not defined.");
-                // 在现有内容前插入提示，而不是完全替换
-                const defaultOriginalData = HEXAGRAM_DATA[currentOriginalHexKey];
-                const defaultChangedData = currentChangedHexKey ? HEXAGRAM_DATA[currentChangedHexKey] : null;
-                
-                contentOriginal.innerHTML = `<p style="color: #f88;">[白话文(other.js)未加载]</p>${defaultOriginalData ? defaultOriginalData.interpretation : ''}`;
-                if (defaultChangedData) {
-                    contentChanged.innerHTML = `<p style="color: #f88;">[白话文(other.js)未加载]</p>${defaultChangedData.interpretation}`;
+                if (b.length > 0) {
+                    newDeck.push(...b.splice(0, pullCountB));
                 }
             }
+            this.state.lotteryDeck = newDeck;
         },
 
-        // [MODIFIED] 修改 showInterpretationModal 以使用 updateModalContent
-        showInterpretationModal: function() {
-            // 暂停视差效果
-            this.state.isParallaxActive = false;
-            gsap.to(this.elements.mainContainer, { duration: 0.5, rotationY: 0, rotationX: 0, ease: "power1.out" });
+        // [NEW] 停止摇签
+        stopShuffling: function() {
+            if (!this.state.isShuffling) return;
 
-            // 重置白话文状态
-            this.state.isVernacular = false; 
+            this.addGlowEffect(this.elements.stopShuffleButton);
 
-            const { currentOriginalHexKey, currentChangedHexKey } = this.state;
-            // 初始加载时，只从 HEXAGRAM_DATA 获取卦名
-            const originalData = HEXAGRAM_DATA[currentOriginalHexKey];
-            const changedData = currentChangedHexKey ? HEXAGRAM_DATA[currentChangedHexKey] : null;
-
-            if (!originalData) return;
-
-            const tabOriginal = document.getElementById('tab-original');
-            const tabChanged = document.getElementById('tab-changed');
-            const contentOriginal = document.getElementById('content-original');
-            const contentChanged = document.getElementById('content-changed');
-
-            // 更新卦名
-            tabOriginal.textContent = `本卦：${originalData.name}`;
-
-            if (changedData) {
-                tabChanged.textContent = `变卦：${changedData.name}`;
-                tabChanged.style.display = 'inline-block';
-            } else {
-                tabChanged.style.display = 'none';
+            // 停止逻辑和视觉洗牌
+            clearInterval(this.state.shuffleInterval);
+            this.state.shuffleInterval = null;
+            if (this.state.visualShuffleTween) {
+                this.state.visualShuffleTween.kill();
             }
+            gsap.to(this.elements.deckVisual, { x: 0, rotationY: 0, rotationX: 0, duration: 0.3, ease: 'power2.out' }); // 牌组归位
 
-            // 使用新函数加载默认内容 (isVernacular 此时为 false)
-            this.updateModalContent(); 
-
-            // 设置默认激活的选项卡
-            tabOriginal.classList.add('active');
-            contentOriginal.classList.add('active');
-            tabChanged.classList.remove('active');
-            contentChanged.classList.remove('active');
-
-            this.elements.interpretationModalOverlay.classList.add('visible');
-        },
-
-        getYaoInfo: function(value) {
-             switch (value) {
-                case 6: return { type: 'yin', isChanging: true, binary: '0', symbol: '×' };
-                case 7: return { type: 'yang', isChanging: false, binary: '1', symbol: '' };
-                case 8: return { type: 'yin', isChanging: false, binary: '0', symbol: '' };
-                case 9: return { type: 'yang', isChanging: true, binary: '1', symbol: '×' };
-                default: return { type: 'error', isChanging: false, binary: '', symbol: '' };
-            }
-        },
-        
-        getChangedYaoValue: function(value) {
-            if (value === 6) return 7;
-            if (value === 9) return 8;
-            return value;
-        },
-
-        createYaoElement: function(info) {
-            const yaoDiv = document.createElement('div');
-            yaoDiv.className = `yao yao-${info.type}`;
-            if(info.type === 'placeholder') return yaoDiv;
-            const svgNS = "http://www.w3.org/2000/svg";
-            const svg = document.createElementNS(svgNS, "svg");
-            svg.setAttribute("viewBox", "0 0 100 10"); 
-            svg.setAttribute("preserveAspectRatio", "none");
-            if (info.type === 'yang') {
-                const line = document.createElementNS(svgNS, "line");
-                line.setAttribute("x1", "0"); line.setAttribute("y1", "5"); line.setAttribute("x2", "100"); line.setAttribute("y2", "5");
-                line.setAttribute("stroke-width", "10");
-                svg.appendChild(line);
-            } else if (info.type === 'yin') {
-                const line1 = document.createElementNS(svgNS, "line");
-                line1.setAttribute("x1", "0"); line1.setAttribute("y1", "5"); line1.setAttribute("x2", "40"); line1.setAttribute("y2", "5");
-                line1.setAttribute("stroke-width", "10");
-                svg.appendChild(line1);
-                const line2 = document.createElementNS(svgNS, "line");
-                line2.setAttribute("x1", "60"); line2.setAttribute("y1", "5"); line2.setAttribute("x2", "100"); line2.setAttribute("y2", "5");
-                line2.setAttribute("stroke-width", "10");
-                svg.appendChild(line2);
-            }
-            yaoDiv.appendChild(svg);
-            if (info.isChanging) {
-                yaoDiv.classList.add('yao-changing');
-                const symbol = document.createElement('div');
-                symbol.className = 'yao-changing-symbol';
-                symbol.textContent = info.symbol;
-                yaoDiv.appendChild(symbol);
-            }
-            return yaoDiv;
-        },
-
-        displayHexagrams: function(originalYaoValues) {
-            this.elements.originalHexagram.innerHTML = '';
-            this.elements.changedHexagram.innerHTML = '';
-            originalYaoValues.forEach(value => {
-                this.elements.originalHexagram.appendChild(this.createYaoElement(this.getYaoInfo(value)));
-                this.elements.changedHexagram.appendChild(this.createYaoElement(this.getYaoInfo(this.getChangedYaoValue(value))));
+            // 隐藏摇签界面，显示选签界面
+            gsap.to(this.elements.shuffleContainer, { 
+                opacity: 0, 
+                duration: 0.5,
+                onComplete: () => {
+                    this.elements.shuffleContainer.classList.remove('visible');
+                    // 准备选签界面
+                    this.populateCardGrid();
+                    this.elements.selectionContainer.classList.add('visible');
+                }
             });
-            gsap.from(this.elements.originalHexagram.children, { duration: 2, opacity: 0, stagger: 0.1 });
-            gsap.from(this.elements.changedHexagram.children, { duration: 2, opacity: 0, stagger: 0.1 });
         },
 
-        displayInterpretations: function(originalYaoValues) {
-            const originalBinary = [...originalYaoValues].map(v => this.getYaoInfo(v).binary).reverse().join('');
-            const changedBinary = [...originalYaoValues].map(v => this.getYaoInfo(this.getChangedYaoValue(v)).binary).reverse().join('');
-            
-            this.state.currentOriginalHexKey = originalBinary;
-            this.state.currentChangedHexKey = originalBinary !== changedBinary ? changedBinary : null;
+        // [NEW] 生成选签网格
+        populateCardGrid: function() {
+            const grid = this.elements.cardGrid;
+            grid.innerHTML = '';
+            const fragment = document.createDocumentFragment();
 
-            const originalHexData = HEXAGRAM_DATA[originalBinary] || { name: '未知' };
-            const changedHexData = HEXAGRAM_DATA[changedBinary] || { name: '未知' };
-            this.elements.originalHexagramName.textContent = `${originalHexData.name}`;
-            gsap.from(this.elements.originalHexagramName, { opacity: 0, y: 10, duration: 0.5, ease: 'power1.out' });
-            if (originalBinary !== changedBinary) {
-                this.elements.changedHexagramContainer.style.display = 'flex';
-                this.elements.changedHexagramName.textContent = `${changedHexData.name}`;
-                gsap.from(this.elements.changedHexagramName, { opacity: 0, y: 10, duration: 0.5, ease: 'power1.out' });
-            } else {
-                this.elements.changedHexagramContainer.style.display = 'none';
-                this.elements.changedHexagramName.textContent = '';
+            for (const lotIndex of this.state.lotteryDeck) {
+                const card = document.createElement('div');
+                card.className = 'lot-card';
+                // card.textContent = '签'; // [DELETED] (R4: Card Style)
+                card.dataset.lotIndex = lotIndex;
+
+                card.addEventListener('click', () => this.selectCard(card, lotIndex), { once: true }); // 点击一次后失效
+                fragment.appendChild(card);
             }
             
-            // 保存卜卦历史记录
-            this.saveHistory(
-                this.state.currentQuestion,
-                originalBinary,
-                originalBinary !== changedBinary ? changedBinary : null
-            );
+            grid.appendChild(fragment);
+
+            // 卡片入场动画
+            gsap.from(grid.children, { 
+                opacity: 0, 
+              //  scale: 0.5, 
+              //  y: 130, 
+                duration: 0.5, 
+                stagger: 0.02, 
+                ease: 'back.out(1.7)'
+            });
         },
 
-        initParallax: function() {
-            const container = this.elements.mainContainer;
-            const sensitivity = 25;
-            if (this.state.isMobile) {
-                window.addEventListener('deviceorientation', (e) => {
-                    // [MODIFIED] 如果视差效果暂停，则不执行任何操作
-                    if (!this.state.isParallaxActive) return;
+        // [NEW] 选择卡片
+        selectCard: function(selectedCard, lotIndex) {
+            if (typeof LOT_DATA === 'undefined') return;
 
-                    const { beta, gamma } = e;
-                    if (beta === null || gamma === null) return;
-                    if (!this.state.isCalibrated) {
-                        this.state.baseBeta = beta;
-                        this.state.baseGamma = gamma;
-                        this.state.isCalibrated = true;
-                    }
-                    const deltaBeta = beta - this.state.baseBeta;
-                    const deltaGamma = gamma - this.state.baseGamma;
-                    const yOffset = gsap.utils.clamp(-45, 45, deltaBeta) / 45; 
-                    const xOffset = gsap.utils.clamp(-45, 45, deltaGamma) / 45;
-                    gsap.to(container, { duration: 0.5, rotationY: xOffset * sensitivity, rotationX: -yOffset * sensitivity, ease: "power1.out" });
-                });
-            } else {
-                window.addEventListener('mousemove', (e) => {
-                    if (!this.state.isParallaxActive) return;
+            const lot = LOT_DATA[lotIndex];
+            
+            // 禁用所有卡片点击
+            this.elements.cardGrid.style.pointerEvents = 'none';
+            
+            // 高亮选中的卡片，淡化其他卡片
+            const allCards = this.elements.cardGrid.children;
+            gsap.to(Array.from(allCards).filter(c => c !== selectedCard), { 
+                opacity: 0.3, 
+                filter: 'blur(2px)', 
+                duration: 0.3 
+            });
+            
+            gsap.to(selectedCard, { 
+                opacity: 1, 
+                scale: 1.15, 
+                filter: 'none',
+                boxShadow: '0 8px 25px var(--glow-color)',
+                duration: 0.3,
+                delay: 0.1,
+                onComplete: () => {
+                    // 0.5秒后隐藏选签界面并显示结果
+                    setTimeout(() => {
+                        gsap.to(this.elements.selectionContainer, {
+                            opacity: 0,
+                            duration: 0.4,
+                            onComplete: () => {
+                                this.elements.selectionContainer.classList.remove('visible');
+                                this.displayLotResult(lot);
+                            }
+                        });
+                    }, 500);
+                }
+            });
+        },
 
-                    const { clientX, clientY } = e;
-                    const { innerWidth, innerHeight } = window;
-                    const xOffset = (clientX / innerWidth - 0.5) * 2;
-                    const yOffset = (clientY / innerHeight - 0.5) * 2;
-                    gsap.to(container, { duration: 0.8, rotationY: xOffset * 7, rotationX: -yOffset * 7, ease: "power1.out" });
-                });
+        // 显示灵签结果弹窗 (基本不变, 只修改重置逻辑)
+        displayLotResult: function(lot) {
+            // 设置弹窗标题
+            this.elements.modalTitle.textContent = `第 ${lot.id} 签 (${lot.title})`;
+            
+            // [NEW] 根据新格式 "飞龙变化 大吉" 拆分标题
+            let titleMain = lot.title;
+            let titleSub = "";
+            const titleParts = lot.title.split(' '); // 按空格分割
+            if (titleParts.length >= 2) { // 确保至少有两部分
+                titleMain = titleParts[0];
+                titleSub = titleParts.slice(1).join(' '); // 处理 "大吉" 或 "中平" 等
             }
+
+            // 构建弹窗内容
+            let contentHtml = `
+                <div class="lot-header">
+                    <div class="lot-title">第 ${lot.id} 签</div>
+                    <div class="lot-subtitle"><strong>${titleMain}</strong> <small>${titleSub}</small></div>
+                </div>
+                <div class="lot-poem">${lot.poem}</div>
+            `;
+            
+            // 遍历所有解签部分
+            for (const key in lot.sections) {
+                const value = lot.sections[key];
+                const contentClass = (key === "解曰") ? "lot-section-jie" : "lot-section-poem";
+                
+                contentHtml += `
+                    <div class="lot-section">
+                        <h3>${key}</h3>
+                        <div class="${contentClass}">${value}</div>
+                    </div>
+                `;
+            }
+            
+            this.elements.modalContent.innerHTML = contentHtml;
+            
+            // 显示弹窗
+            this.elements.modalOverlay.classList.add('visible');
+            
+            // 滚动条置顶
+            this.elements.modalContent.scrollTop = 0;
+
+            // [MODIFIED] 不再调用 resetUI()，移至 closeModal()
         },
 
+        // 关闭弹窗
+        closeModal: function() {
+            this.elements.modalOverlay.classList.remove('visible');
+            this.resetUI(); // [MODIFIED] 关闭弹窗时重置整个界面
+        },
+
+        // [MODIFIED] 重置整个抽签界面状态
+        resetUI: function() {
+            // 停止任何可能在运行的动画
+            if (this.state.shuffleInterval) {
+                clearInterval(this.state.shuffleInterval);
+                this.state.shuffleInterval = null;
+            }
+            if (this.state.visualShuffleTween) {
+                this.state.visualShuffleTween.kill();
+                this.state.visualShuffleTween = null;
+            }
+            
+            // 清除所有 GSAP 动画
+            gsap.killTweensOf(this.elements.deckVisual);
+            gsap.killTweensOf(this.elements.mainContainer);
+            gsap.killTweensOf(this.elements.shuffleContainer);
+            gsap.killTweensOf(this.elements.selectionContainer);
+            
+            // 重置元素样式
+            gsap.set([
+                this.elements.deckVisual,
+                this.elements.mainContainer,
+                this.elements.shuffleContainer,
+                this.elements.selectionContainer
+            ], { clearProps: 'all' });
+
+            // 隐藏所有覆盖层
+            this.elements.shuffleContainer.classList.remove('visible');
+            this.elements.selectionContainer.classList.remove('visible');
+            this.elements.shuffleContainer.style.opacity = '';
+            this.elements.selectionContainer.style.opacity = '';
+            this.elements.cardGrid.innerHTML = ''; // 清空卡片
+            this.elements.cardGrid.style.pointerEvents = 'auto'; // 恢复点击
+
+            // 重置按钮状态
+            this.elements.drawButton.innerHTML = '诚心抽签';
+            this.elements.drawButton.disabled = false;
+            this.elements.directSubmitButton.disabled = false;
+
+            // 重置切换状态
+            this.elements.directSlider.value = 1;
+            this.elements.sliderValue.textContent = '1';
+            this.elements.methodToggle.checked = false;
+            this.elements.interactiveMethodContainer.style.display = 'flex';
+            this.elements.directMethodContainer.style.display = 'none';
+            this.elements.labelInteractive.style.opacity = '1';
+            this.elements.labelDirect.style.opacity = '0.7';
+
+            // 恢复主容器
+            this.elements.mainContainer.style.display = 'block';
+            this.elements.mainContainer.style.opacity = '1';
+            
+            // 重置状态标志
+            this.state.isShuffling = false;
+            this.state.lotteryDeck = [];
+        },
+
+        // 按钮发光效果 (来自参考文件)
         addGlowEffect: function(button) {
             const glow = document.createElement('div');
             glow.className = 'button-glow-effect';
@@ -1251,199 +1082,41 @@
             setTimeout(() => glow.remove(), 600);
         },
 
-        // 保存卜卦历史记录
-        saveHistory: function(question, originalHexKey, changedHexKey) {
-            const historyItem = {
-                date: new Date().toLocaleString(),
-                question: question || '无问题',
-                originalHexKey: originalHexKey,
-                changedHexKey: changedHexKey,
-                originalName: HEXAGRAM_DATA[originalHexKey]?.name || '未知',
-                changedName: changedHexKey ? (HEXAGRAM_DATA[changedHexKey]?.name || '未知') : null
-            };
-            
-            // 从本地存储获取历史记录
-            let history = JSON.parse(localStorage.getItem('bagua-history') || '[]');
-            
-            // 添加新记录到开头
-            history.unshift(historyItem);
-            
-            // 限制历史记录数量为99条
-            if (history.length > 99) {
-                history = history.slice(0, 99);
-            }
-            
-            // 保存到本地存储
-            localStorage.setItem('bagua-history', JSON.stringify(history));
-            
-            // 更新当前状态
-            this.state.divinationHistory = history;
-        },
-        
-        // 显示历史记录
-        showHistoryModal: function() {
-            const historyContent = document.getElementById('history-content');
-            historyContent.innerHTML = '';
-            
-            // 从本地存储获取历史记录
-            const history = JSON.parse(localStorage.getItem('bagua-history') || '[]');
-            this.state.divinationHistory = history;
-            
-            if (history.length === 0) {
-                historyContent.innerHTML = '<div class="no-history">暂无卜卦历史记录</div>';
-            } else {
-                // 添加清除按钮
-                const clearButton = document.createElement('button');
-                clearButton.className = 'clear-history-button';
-                clearButton.textContent = '归入混元';
-                clearButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (confirm('历史记录全部会被删除，确定吗？')) {
-                        localStorage.removeItem('bagua-history');
-                        this.state.divinationHistory = [];
-                        this.showHistoryModal();
-                    }
-                });
-                historyContent.appendChild(clearButton);
-                
-                history.forEach((item, index) => {
-                    const historyItem = document.createElement('div');
-                    historyItem.className = 'history-item';
-                    historyItem.dataset.index = index;
-                    
-                    const dateEl = document.createElement('div');
-                    dateEl.className = 'history-date';
-                    dateEl.textContent = item.date;
-                    
-                    const questionEl = document.createElement('div');
-                    questionEl.className = 'history-question';
-                    questionEl.textContent = item.question;
-                    
-                    const hexagramsEl = document.createElement('div');
-                    hexagramsEl.className = 'history-hexagrams';
-                    
-                    const originalEl = document.createElement('div');
-                    originalEl.className = 'history-hexagram';
-                    originalEl.innerHTML = `<div class="history-hexagram-name">${item.originalName}卦</div>`;
-                    
-                    hexagramsEl.appendChild(originalEl);
-                    
-                    if (item.changedName) {
-                        const changedEl = document.createElement('div');
-                        changedEl.className = 'history-hexagram';
-                        changedEl.innerHTML = `<div class="history-hexagram-name">${item.changedName}卦</div>`;
-                        hexagramsEl.appendChild(changedEl);
-                    }
-                    
-                    historyItem.appendChild(dateEl);
-                    historyItem.appendChild(questionEl);
-                    historyItem.appendChild(hexagramsEl);
-                    
-                    // 点击历史记录项查看详情
-                    historyItem.addEventListener('click', () => {
-                        document.getElementById('history-modal-overlay').classList.remove('visible');
-                        this.showHistoryDetail(item);
-                    });
-                    
-                    historyContent.appendChild(historyItem);
-                });
-            }
-            
-            document.getElementById('history-modal-overlay').classList.add('visible');
-        },
-        
-        // 显示历史记录详情
-        showHistoryDetail: function(item) {
-            // 设置当前的卦象 key，以便“说人话”按钮可以工作
-            this.state.currentOriginalHexKey = item.originalHexKey;
-            this.state.currentChangedHexKey = item.changedHexKey;
-
-            // 显示解释弹窗
-            this.showInterpretationModal();
-        },
-        
-        // [MODIFIED] 修改 init 函数以包含新按钮的逻辑
+        // 初始化
         init: function() {
-            // 加载历史记录
-            this.state.divinationHistory = JSON.parse(localStorage.getItem('bagua-history') || '[]');
-            
-            const historyButton = document.getElementById('history-button');
-            const historyModalOverlay = document.getElementById('history-modal-overlay');
-            const historyCloseBtn = document.getElementById('history-close-btn');
-
-            historyButton.addEventListener('click', () => {
-                historyButton.classList.add('active');
-                this.showHistoryModal();
-            });
-            
-            const closeHistoryModal = () => {
-                historyModalOverlay.classList.remove('visible');
-                historyButton.classList.remove('active');
-            };
-
-            historyModalOverlay.addEventListener('click', (e) => {
-                if (e.target === historyModalOverlay) {
-                    closeHistoryModal();
-                }
-            });
-            historyCloseBtn.addEventListener('click', closeHistoryModal);
-
+            // [MODIFIED] 绑定抽签方式切换 (R2: Toggle)
             this.elements.methodToggle.addEventListener('change', (e) => {
-                this.state.divinationMethod = e.target.checked ? 'yarrow' : 'random';
-                this.elements.labelYarrow.style.opacity = e.target.checked ? 1 : 0.7;
-                this.elements.labelRandom.style.opacity = e.target.checked ? 0.7 : 1;
+                const isDirect = e.target.checked;
+                this.elements.interactiveMethodContainer.style.display = isDirect ? 'none' : 'flex';
+                this.elements.directMethodContainer.style.display = isDirect ? 'flex' : 'none';
+                this.elements.labelInteractive.style.opacity = isDirect ? '0.7' : '1';
+                this.elements.labelDirect.style.opacity = isDirect ? '1' : '0.7';
             });
 
-            this.elements.divineButton.addEventListener('click', (e) => {
-                this.addGlowEffect(e.currentTarget);
-                const questionInput = document.getElementById('question-input');
-                this.state.currentQuestion = questionInput.value.trim();
-                this.startDivination();
+            // [MODIFIED] 绑定方式一按钮 (R1: Slider)
+            this.elements.directSlider.addEventListener('input', (e) => {
+                this.elements.sliderValue.textContent = e.targe.value;
+            });
+            this.elements.directSubmitButton.addEventListener('click', () => {
+                // this.addGlowEffect(this.elements.directSubmitButton); // [MODIFIED] 移入 startDirectProcess
+                this.startDirectProcess();
             });
 
-            // --- 弹窗事件监听 ---
+            // 绑定方式二按钮
+            this.elements.drawButton.addEventListener('click', () => this.startInteractiveProcess());
+            this.elements.stopShuffleButton.addEventListener('click', () => this.stopShuffling());
 
-            // [NEW] "说人话" 按钮点击事件
-            this.elements.vernacularToggleBtn.addEventListener('click', () => {
-                this.state.isVernacular = !this.state.isVernacular; // 切换状态
-                this.updateModalContent(); // 更新两个选项卡的内容
-            });
-
-            // 弹窗关闭 (点击遮罩层)
-            this.elements.interpretationModalOverlay.addEventListener('click', (e) => {
-                if (e.target === this.elements.interpretationModalOverlay) {
-                    this.elements.interpretationModalOverlay.classList.remove('visible');
-                    this.state.isParallaxActive = true;
-                    this.state.isCalibrated = false; 
-                    this.state.isVernacular = false; // [NEW] 重置状态
+            // 绑定弹窗关闭事件
+            this.elements.modalCloseBtn.addEventListener('click', () => this.closeModal());
+            this.elements.modalOverlay.addEventListener('click', (e) => {
+                if (e.target === this.elements.modalOverlay) {
+                    this.closeModal();
                 }
             });
-            // 弹窗关闭 (点击 "X" 按钮)
-            document.getElementById('modal-close-btn').addEventListener('click', () => {
-                this.elements.interpretationModalOverlay.classList.remove('visible');
-                this.state.isParallaxActive = true;
-                this.state.isCalibrated = false; 
-                this.state.isVernacular = false; // [NEW] 重置状态
-            });
-
-            // 选项卡切换 (只切换 active class，内容已由 updateModalContent 填充)
-            document.getElementById('tab-original').addEventListener('click', () => {
-                document.getElementById('tab-original').classList.add('active');
-                document.getElementById('content-original').classList.add('active');
-                document.getElementById('tab-changed').classList.remove('active');
-                document.getElementById('content-changed').classList.remove('active');
-            });
-            document.getElementById('tab-changed').addEventListener('click', () => {
-                document.getElementById('tab-original').classList.remove('active');
-                document.getElementById('content-original').classList.remove('active');
-                document.getElementById('tab-changed').classList.add('active');
-                document.getElementById('content-changed').classList.add('active');
-            });
-
-            this.initParallax();
         }
     };
 
+    // 页面加载完成后运行
     window.onload = () => {
         // 隐藏加载动画
         setTimeout(() => {
@@ -1454,32 +1127,28 @@
                     pageLoader.style.visibility = 'hidden';
                 }, 500);
             }
-        }, 800);
+        }, 800); // 稍微延长加载动画，使体验更平滑
         
         // 确保在 data.js 加载完毕后初始化
-        if (typeof HEXAGRAM_DATA !== 'undefined') {
-            app.init();
-        } else {
-            // 如果 data.js 延迟加载，设置一个短延时
-            setTimeout(() => {
-                 // 再次检查，以防 data.js 和 other.js 都加载慢
-                 if (typeof app.init === 'function') {
-                    app.init();
-                 } else {
-                    console.error("App 核心未定义。");
-                 }
-            }, 100);
+        // 检查 app 和 LOT_DATA
+        function checkDataAndInit() {
+            if (typeof app !== 'undefined' && typeof LOT_DATA !== 'undefined') {
+                app.init();
+                initTheme();
+            } else {
+                // 如果 lot_data.js 延迟加载，100ms后再试一次
+                console.log("等待 lot_data.js 加载...");
+                setTimeout(checkDataAndInit, 100);
+            }
         }
-        gsap.globalTimeline.timeScale(2.2);
         
-        // 初始化主题
-        initTheme();
+        checkDataAndInit();
     };
     
-    // 主题切换功能
+    // 主题切换功能 (来自参考文件)
     function initTheme() {
         const themeToggle = document.getElementById('theme-toggle');
-        const savedTheme = localStorage.getItem('bagua-theme');
+        const savedTheme = localStorage.getItem('xuantian-lot-theme'); // 使用新名称避免冲突
         
         // 应用保存的主题
         if (savedTheme === 'light') {
@@ -1489,10 +1158,9 @@
         themeToggle.addEventListener('click', () => {
             document.documentElement.classList.toggle('light-theme');
             const currentTheme = document.documentElement.classList.contains('light-theme') ? 'light' : 'dark';
-            localStorage.setItem('bagua-theme', currentTheme);
+            localStorage.setItem('xuantian-lot-theme', currentTheme);
         });
     }
     </script>
 </body>
 </html>
-
