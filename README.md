@@ -5,10 +5,13 @@
 服务器状态：[![Netlify Status](https://api.netlify.com/api/v1/badges/1f379702-6484-4b3a-af2c-e00964033597/deploy-status)](https://app.netlify.com/projects/qigua/deploys)
 
 **这三个术数够普通人答疑解惑了**
+### v0.1.6
+> 修复了主界面的字体大小问题
 ### v0.1.5
 > 新增玄天上帝靈籤的功能
 > 修复了部分bug
 > 修改了灵签随机洗牌的算法，现在每秒9次洗牌，停止摇签后会再进行7次切牌
+
 ### v0.1.4
 > 新增玄天上帝靈籤的界面
 ### v0.1.3
