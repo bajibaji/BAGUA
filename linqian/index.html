@@ -713,15 +713,15 @@
         <div class="shuffle-visual-wrapper">
             <div id="deck-visual"></div> <!-- [MODIFIED] (R1: 移除 "签" 字) -->
         </div>
-        <div id="shuffle-prompt">正在为您洗牌...</div>
+        <div id="shuffle-prompt">正在为您摇一摇...</div>
         <div class="button-wrapper">
-            <button id="stop-shuffle-button">停止摇签</button>
+            <button id="stop-shuffle-button">停下摇签</button>
         </div>
     </div>
 
     <!-- [NEW] 选签容器 -->
     <div id="selection-container" class="fullscreen-overlay">
-        <div id="selection-prompt">请凭直觉点选一根灵签</div>
+        <div id="selection-prompt">请凭直觉选一张灵签</div>
         <div id="card-grid">
             <!-- 49张卡片将由JS生成 -->
         </div>
@@ -1096,7 +1096,7 @@
 
             // [MODIFIED] 绑定方式一按钮 (R1: Slider)
             this.elements.directSlider.addEventListener('input', (e) => {
-                this.elements.sliderValue.textContent = e.targe.value;
+                this.elements.sliderValue.textContent = e.target.value;
             });
             this.elements.directSubmitButton.addEventListener('click', () => {
                 // this.addGlowEffect(this.elements.directSubmitButton); // [MODIFIED] 移入 startDirectProcess
