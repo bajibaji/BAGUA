@@ -4,8 +4,9 @@
 
 服务器状态：[![Netlify Status](https://api.netlify.com/api/v1/badges/1f379702-6484-4b3a-af2c-e00964033597/deploy-status)](https://app.netlify.com/projects/qigua/deploys)
 
-**本项目现在仅有大衍筮法和诸葛神数两个功能，其他术数暂时不考虑，源代码都在这里了反正**
-
+**大衍筮法、诸葛神数和玄天上帝靈籤，这三个术数够普通人答疑解惑了**
+### v0.1.4
+> 新增玄天上帝靈籤的界面
 ### v0.1.3
 > 新增解卦说人话的内容和功能
 ### v0.1.2
