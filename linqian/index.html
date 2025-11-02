@@ -1075,7 +1075,7 @@
             this.state.lotteryDeck = [];
         },
 
-        // 按钮发光效果 (来自参考文件)
+   
         addGlowEffect: function(button) {
             const glow = document.createElement('div');
             glow.className = 'button-glow-effect';
@@ -1085,7 +1085,7 @@
 
         // 初始化
         init: function() {
-            // [MODIFIED] 绑定抽签方式切换 (R2: Toggle)
+         
             this.elements.methodToggle.addEventListener('change', (e) => {
                 const isDirect = e.target.checked;
                 this.elements.interactiveMethodContainer.style.display = isDirect ? 'none' : 'flex';
@@ -1099,7 +1099,7 @@
                 this.elements.sliderValue.textContent = e.target.value;
             });
             this.elements.directSubmitButton.addEventListener('click', () => {
-                // this.addGlowEffect(this.elements.directSubmitButton); // [MODIFIED] 移入 startDirectProcess
+
                 this.startDirectProcess();
             });
 
