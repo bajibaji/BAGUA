@@ -783,21 +783,69 @@
 
         // [MODIFIED] 启动指定签文流程
         startDirectProcess: function() {
-            // [ADDED] (R1)
+            // 添加按钮反馈并禁用按钮，防止重复触发
             this.addGlowEffect(this.elements.directSubmitButton);
+            this.elements.directSubmitButton.disabled = true;
 
-            const num = parseInt(this.elements.directSlider.value, 10); // [MODIFIED] (R1)
-            
-            // [DELETED] (R1) 移除输入框验证
-            
+            const num = parseInt(this.elements.directSlider.value, 10); // 用户选择的 N
             // 检查数据
             if (typeof LOT_DATA === 'undefined' || LOT_DATA.length === 0) {
                 console.error("灵签数据(lot_data.js)未加载!");
+                this.elements.directSubmitButton.disabled = false;
                 return;
             }
 
-            const lot = LOT_DATA[num - 1]; // 数组索引从0开始
-            this.displayLotResult(lot);
+            // 验证范围（保险）
+            const total = LOT_DATA.length;
+            if (isNaN(num) || num < 1 || num > total) {
+                alert(`请选择 1 至 ${total} 之间的数字`);
+                this.elements.directSubmitButton.disabled = false;
+                return;
+            }
+
+            // 初始化牌堆 (0..total-1)
+            let deck = Array.from({ length: total }, (_, i) => i);
+            this.state.lotteryDeck = [...deck];
+
+            // 简单视觉反馈：在 deckVisual 上做抖动/翻转动画，伴随 9 次切牌
+            let cuts = 0;
+            const doCut = () => {
+                // 执行一次随机切牌（将前段移到末尾或末段移到前面）
+                const cutPoint = Math.floor(Math.random() * deck.length);
+                deck = [...deck.slice(cutPoint), ...deck.slice(0, cutPoint)];
+
+                // 视觉微动
+                gsap.to(this.elements.deckVisual, {
+                    duration: 0.18,
+                    rotationY: Math.random() * 60 - 30,
+                    x: Math.random() * 18 - 9,
+                    y: Math.random() * 8 - 4,
+                    ease: 'power1.inOut',
+                });
+
+                cuts++;
+                if (cuts < 9) {
+                    // 间隔短暂延迟以便用户能感受到切牌次数
+                    setTimeout(doCut, 30);
+                } else {
+                    // 切牌完成：保存牌堆并根据用户输入的序号取出第 N 张
+                    this.state.lotteryDeck = [...deck];
+
+                    const pickIndex = num - 1; // 用户输入第 N 张 -> 索引 num-1
+                    const chosenLotIndex = deck[pickIndex];
+                    const lot = LOT_DATA[chosenLotIndex];
+
+                    // 恢复按钮状态并显示结果
+                    this.elements.directSubmitButton.disabled = false;
+                    // 轻微归位动画
+                    gsap.to(this.elements.deckVisual, { duration: 0.25, rotationY: 0, x: 0, y: 0, ease: 'power2.out' });
+                    // 显示结果
+                    this.displayLotResult(lot);
+                }
+            };
+
+            // 启动切牌流程
+            doCut();
         },
 
         // [MODIFIED] 启动交互式抽签流程
@@ -1065,11 +1113,14 @@
         // 关闭弹窗
         closeModal: function() {
             this.elements.modalOverlay.classList.remove('visible');
-            this.resetUI(); // [MODIFIED] 关闭弹窗时重置整个界面
+            // 关闭弹窗后重置界面，但保留当前的抽签方式（如果用户当前处于报数模式则保留）
+            const preserveMethod = !!this.elements.methodToggle.checked;
+            this.resetUI({ preserveMethod });
         },
 
-        // [MODIFIED] 重置整个抽签界面状态
-        resetUI: function() {
+    // [MODIFIED] 重置整个抽签界面状态
+    // options: { preserveMethod: boolean }
+    resetUI: function(options = {}) {
             // 停止任何可能在运行的动画
             if (this.state.shuffleInterval) {
                 clearInterval(this.state.shuffleInterval);
@@ -1107,14 +1158,31 @@
             this.elements.drawButton.disabled = false;
             this.elements.directSubmitButton.disabled = false;
 
-            // 重置切换状态
-            this.elements.directSlider.value = 1;
-            this.elements.sliderValue.textContent = '1';
-            this.elements.methodToggle.checked = false;
-            this.elements.interactiveMethodContainer.style.display = 'flex';
-            this.elements.directMethodContainer.style.display = 'none';
-            this.elements.labelInteractive.style.opacity = '1';
-            this.elements.labelDirect.style.opacity = '0.7';
+            // 重置切换状态（可保留当前方式以便在报数模式下关闭弹窗后仍停留在报数界面）
+            const preserveMethod = !!options.preserveMethod;
+            if (!preserveMethod) {
+                this.elements.directSlider.value = 1;
+                this.elements.sliderValue.textContent = '1';
+                this.elements.methodToggle.checked = false;
+                // 直接设置为交互式显示
+                this.elements.interactiveMethodContainer.style.display = 'flex';
+                this.elements.directMethodContainer.style.display = 'none';
+                this.elements.labelInteractive.style.opacity = '1';
+                this.elements.labelDirect.style.opacity = '0.7';
+            } else {
+                // 保留当前模式，只更新视觉/可用性但不改变选择
+                if (this.elements.methodToggle.checked) {
+                    this.elements.interactiveMethodContainer.style.display = 'none';
+                    this.elements.directMethodContainer.style.display = 'flex';
+                    this.elements.labelInteractive.style.opacity = '0.7';
+                    this.elements.labelDirect.style.opacity = '1';
+                } else {
+                    this.elements.interactiveMethodContainer.style.display = 'flex';
+                    this.elements.directMethodContainer.style.display = 'none';
+                    this.elements.labelInteractive.style.opacity = '1';
+                    this.elements.labelDirect.style.opacity = '0.7';
+                }
+            }
 
             // 恢复主容器
             this.elements.mainContainer.style.display = 'block';
@@ -1123,6 +1191,37 @@
             // 重置状态标志
             this.state.isShuffling = false;
             this.state.lotteryDeck = [];
+        },
+
+        // 平滑切换抽签方式（使用 GSAP 做淡入淡出与位移）
+        switchMethodUI: function(isDirect) {
+            const fromEl = isDirect ? this.elements.interactiveMethodContainer : this.elements.directMethodContainer;
+            const toEl = isDirect ? this.elements.directMethodContainer : this.elements.interactiveMethodContainer;
+
+            // 如果目标已经可见，则直接设置样式并返回
+            if (toEl.style.display === 'flex') {
+                this.elements.labelInteractive.style.opacity = isDirect ? '0.7' : '1';
+                this.elements.labelDirect.style.opacity = isDirect ? '1' : '0.7';
+                return;
+            }
+
+            // 淡出当前
+            gsap.to(fromEl, {
+                duration: 0.22,
+                opacity: 0,
+                y: -6,
+                ease: 'power1.out',
+                onComplete: () => {
+                    fromEl.style.display = 'none';
+                    // 显示目标并从低处淡入
+                    toEl.style.display = 'flex';
+                    gsap.fromTo(toEl, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out' });
+                }
+            });
+
+            // 更新标签样式
+            this.elements.labelInteractive.style.opacity = isDirect ? '0.7' : '1';
+            this.elements.labelDirect.style.opacity = isDirect ? '1' : '0.7';
         },
 
    
@@ -1138,10 +1237,8 @@
          
             this.elements.methodToggle.addEventListener('change', (e) => {
                 const isDirect = e.target.checked;
-                this.elements.interactiveMethodContainer.style.display = isDirect ? 'none' : 'flex';
-                this.elements.directMethodContainer.style.display = isDirect ? 'flex' : 'none';
-                this.elements.labelInteractive.style.opacity = isDirect ? '0.7' : '1';
-                this.elements.labelDirect.style.opacity = isDirect ? '1' : '0.7';
+                // 使用平滑切换动画
+                this.switchMethodUI(isDirect);
             });
 
             // [MODIFIED] 绑定方式一按钮 (R1: Slider)
