@@ -5,6 +5,13 @@
 服务器状态：[![Netlify Status](https://api.netlify.com/api/v1/badges/1f379702-6484-4b3a-af2c-e00964033597/deploy-status)](https://app.netlify.com/projects/qigua/deploys)
 
 **这三个术数够普通人答疑解惑了**
+### v0.1.7
+> 修复了部分动画
+> 修改了灵签的起卦方式
+> 调整了灵签的界面排版
+> 校正了说人话中的文本问题
+> 调整了大衍筮法界面的排版
+> 调整了卦象解释的文本排版问题
 ### v0.1.6
 > 修复了主界面的字体大小问题
 ### v0.1.5

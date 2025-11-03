@@ -107,7 +107,7 @@
         @keyframes fadeInContainer { to { opacity: 1; } }
 
         h1, h2, h3 { color: var(--title-color); text-align: center; font-weight: 700; }
-        h1 { font-size: 2.2em; margin-bottom: 25px; }
+        h1 { font-size: 3em; margin-bottom: -15px; }
         .section p { text-align: center; line-height: 1.8; font-size: 1.1em; margin-bottom: 20px; }
         
         .button-wrapper { text-align: center; margin-top: 20px; position: relative; min-height: 60px; display: flex; justify-content: center; align-items: center; gap: 15px;}
@@ -219,6 +219,15 @@
         }
         #modal-close-btn:hover { opacity: 1; }
 
+        /* 隐藏滚动条但保持可滚动 */
+        * {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        *::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
         #modal-content { 
             padding: 25px; 
             overflow-y: auto; 
@@ -226,6 +235,11 @@
             font-size: 1.0em; 
             white-space: normal; /* 覆盖 pre-wrap */
             animation: contentFadeIn 0.5s ease;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        #modal-content::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
         @keyframes contentFadeIn { from { opacity: 0; } to { opacity: 1; } }
         
@@ -390,16 +404,29 @@
             padding: 10px;
             border: 1px dashed var(--border-color);
             border-radius: 8px;
-            min-height: 150px;
+            height: 150px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            transition: all 0.3s ease-in-out;
+            opacity: 1;
+            transform: translateY(0);
+            position: absolute;
+            left: 0;
+            right: 0;
+            margin: 0 10px;
+        }
+        .method-container.hidden {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
         }
         .method-container p {
             font-size: 1em;
             opacity: 0.8;
             margin-bottom: 15px;
+            transition: opacity 0.2s ease;
         }
 
         /* --- [MODIFIED] 方式一 "指定灵签" (R1: Slider) --- */
@@ -675,17 +702,17 @@
 
                 <!-- [MODIFIED] 抽签方式选择 (R2: Toggle Switch) -->
                 <div class="method-switch-container">
-                    <label id="label-interactive">诚心摇签</label>
+                    <label id="label-interactive">摇签</label>
                     <label class="method-switch">
                         <input type="checkbox" id="method-toggle">
                         <span class="slider"></span>
                     </label>
-                    <label id="label-direct">指定灵签</label>
+                    <label id="label-direct">报数</label>
                 </div>
-            </div>
+                <div style="position: relative; height: 170px; margin-bottom: 20px;"><!-- 添加容器用于定位 -->
             
             <!-- [MODIFIED] 方式一：指定灵签 (R1: Slider) -->
-            <div id="direct-method-container" class="method-container" style="display: none;">
+            <div id="direct-method-container" class="method-container hidden">
                 <p>请滑动选择 1 至 49 之间的数字</p>
                 <div class="slider-value-display">
                     <span id="slider-value">1</span>
@@ -783,12 +810,41 @@
 
         // [MODIFIED] 启动指定签文流程
         startDirectProcess: function() {
-            // [ADDED] (R1)
             this.addGlowEffect(this.elements.directSubmitButton);
-
-            const num = parseInt(this.elements.directSlider.value, 10); // [MODIFIED] (R1)
             
-            // [DELETED] (R1) 移除输入框验证
+            // 初始化签筒
+            this.state.lotteryDeck = Array.from({ length: 49 }, (_, i) => i);
+            
+            // 执行9次切牌
+            for(let i = 0; i < 9; i++) {
+                let deck = [...this.state.lotteryDeck];
+                const totalCards = deck.length;
+                
+                // 随机决定三份的大小（确保每份至少有1张牌）
+                let cut1 = Math.floor(Math.random() * (totalCards - 2)) + 1;
+                let remainingCards = totalCards - cut1;
+                let cut2 = Math.floor(Math.random() * (remainingCards - 1)) + 1;
+                let cut3 = remainingCards - cut2;
+                
+                // 分成三份
+                let pile1 = deck.slice(0, cut1);
+                let pile2 = deck.slice(cut1, cut1 + cut2);
+                let pile3 = deck.slice(cut1 + cut2);
+                
+                // 随机决定三份牌的重组顺序
+                const piles = [pile1, pile2, pile3];
+                const newDeck = [];
+                
+                while(piles.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * piles.length);
+                    newDeck.push(...piles.splice(randomIndex, 1)[0]);
+                }
+                
+                this.state.lotteryDeck = newDeck;
+            }
+
+            // 获取用户选择的数字
+            const num = parseInt(this.elements.directSlider.value, 10);
             
             // 检查数据
             if (typeof LOT_DATA === 'undefined' || LOT_DATA.length === 0) {
@@ -796,7 +852,9 @@
                 return;
             }
 
-            const lot = LOT_DATA[num - 1]; // 数组索引从0开始
+            // 根据用户选择的数字从切牌后的数组中选择对应位置的签
+            const lotIndex = this.state.lotteryDeck[num - 1];
+            const lot = LOT_DATA[lotIndex];
             this.displayLotResult(lot);
         },
 
@@ -1138,8 +1196,22 @@
          
             this.elements.methodToggle.addEventListener('change', (e) => {
                 const isDirect = e.target.checked;
-                this.elements.interactiveMethodContainer.style.display = isDirect ? 'none' : 'flex';
-                this.elements.directMethodContainer.style.display = isDirect ? 'flex' : 'none';
+                
+                // 添加/移除隐藏类来触发动画
+                if (isDirect) {
+                    this.elements.interactiveMethodContainer.classList.add('hidden');
+                    // 等待第一个容器的动画完成后再显示第二个容器
+                    setTimeout(() => {
+                        this.elements.directMethodContainer.classList.remove('hidden');
+                    }, 300);
+                } else {
+                    this.elements.directMethodContainer.classList.add('hidden');
+                    setTimeout(() => {
+                        this.elements.interactiveMethodContainer.classList.remove('hidden');
+                    }, 300);
+                }
+                
+                // 更新标签透明度
                 this.elements.labelInteractive.style.opacity = isDirect ? '0.7' : '1';
                 this.elements.labelDirect.style.opacity = isDirect ? '1' : '0.7';
             });
