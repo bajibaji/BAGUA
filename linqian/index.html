@@ -107,8 +107,8 @@
         @keyframes fadeInContainer { to { opacity: 1; } }
 
         h1, h2, h3 { color: var(--title-color); text-align: center; font-weight: 700; }
-        h1 { font-size: 2.2em; margin-bottom: -15px; }
-        .section p { text-align: center; line-height: 1.8; font-size: 1.0em; margin-bottom: 20px; }
+        h1 { font-size: 2.3em; margin-bottom: -15px; }
+        .section p { text-align: center; line-height: 1.8; font-size: 0.9em; margin-bottom: 20px; }
         
         .button-wrapper { text-align: center; margin-top: 20px; position: relative; min-height: 60px; display: flex; justify-content: center; align-items: center; gap: 15px;}
         button {
@@ -797,16 +797,22 @@
 
             // 验证范围（保险）
             const total = LOT_DATA.length;
+           
             if (isNaN(num) || num < 1 || num > total) {
                 alert(`请选择 1 至 ${total} 之间的数字`);
                 this.elements.directSubmitButton.disabled = false;
+                
                 return;
             }
 
-            // 初始化牌堆 (0..total-1)
-            let deck = Array.from({ length: total }, (_, i) => i);
+            // 初始化牌堆 (1..total)，使牌号直接对应 LOT_DATA 的 id 字段
+            // 立即使用 Fisher–Yates 生成随机顺序，保证初始顺序已随机化
+            let deck = this.fisherYatesShuffle(Array.from({ length: total }, (_, i) => i + 1));
             this.state.lotteryDeck = [...deck];
 
+
+
+            
             // 简单视觉反馈：在 deckVisual 上做抖动/翻转动画，伴随 9 次切牌
             let cuts = 0;
             const doCut = () => {
@@ -815,30 +821,31 @@
                 deck = [...deck.slice(cutPoint), ...deck.slice(0, cutPoint)];
 
                 // 视觉微动
-                gsap.to(this.elements.deckVisual, {
-                    duration: 0.18,
-                    rotationY: Math.random() * 60 - 30,
+                gsap.to(this.elements.directSubmitButton, {
+                    duration: 0.1,
+                    rotationY: Math.random() * 160,
                     x: Math.random() * 18 - 9,
                     y: Math.random() * 8 - 4,
-                    ease: 'power1.inOut',
+                    ease: 'power2.inOut',
                 });
 
                 cuts++;
-                if (cuts < 9) {
+                if (cuts < 81) {
                     // 间隔短暂延迟以便用户能感受到切牌次数
-                    setTimeout(doCut, 30);
+                    setTimeout(doCut, 13);
                 } else {
                     // 切牌完成：保存牌堆并根据用户输入的序号取出第 N 张
                     this.state.lotteryDeck = [...deck];
 
                     const pickIndex = num - 1; // 用户输入第 N 张 -> 索引 num-1
                     const chosenLotIndex = deck[pickIndex];
-                    const lot = LOT_DATA[chosenLotIndex];
+                    // deck 中的值为 1..N，对应 LOT_DATA 的 id，因此访问时需要 -1
+                    const lot = LOT_DATA[chosenLotIndex - 1];
 
                     // 恢复按钮状态并显示结果
                     this.elements.directSubmitButton.disabled = false;
                     // 轻微归位动画
-                    gsap.to(this.elements.deckVisual, { duration: 0.25, rotationY: 0, x: 0, y: 0, ease: 'power2.out' });
+                    gsap.to(this.elements.directSubmitButton, { duration: 0.25, rotationY: 0, x: 0, y: 0, ease: 'power2.out' });
                     // 显示结果
                     this.displayLotResult(lot);
                 }
@@ -874,8 +881,8 @@
                 }
             });
 
-            // 初始化签筒 (0-48)
-            this.state.lotteryDeck = Array.from({ length: 49 }, (_, i) => i);
+            // 初始化签筒 (1-49) 并立即 Fisher–Yates 洗牌以生成随机顺序
+            this.state.lotteryDeck = this.fisherYatesShuffle(Array.from({ length: 49 }, (_, i) => i + 1));
             
             // 启动逻辑洗牌 (每 111ms 洗一次, 约 9次/秒)
             this.state.shuffleInterval = setInterval(() => this.riffleShuffle(), 111); // [MODIFIED] (R2: 加快速度)
@@ -892,21 +899,44 @@
             });
         },
 
-        // 核心洗牌逻辑 (Riffle Shuffle)
-        riffleShuffle: function() {
-            let deck = [...this.state.lotteryDeck];  // 创建副本避免直接修改原数组
+        // Fisher–Yates 洗牌（就地）——用于保证最终公平性
+        fisherYatesShuffle: function(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const tmp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = tmp;
+            }
+            return arr;
+        },
 
-            // 1. 首先执行一次随机切牌（完全随机的切分点）
-            let cutPoint = Math.floor(Math.random() * deck.length);
+        // 核心洗牌逻辑 (Riffle Shuffle) —— 保留视觉交错效果，但增加边界保护
+        riffleShuffle: function() {
+            let deck = Array.isArray(this.state.lotteryDeck) ? [...this.state.lotteryDeck] : [];
+            const n = deck.length;
+            if (n <= 1) {
+                // 无需洗牌
+                return;
+            }
+            if (n === 2) {
+                // 对两张牌，50% 概率交换
+                if (Math.random() < 0.5) deck = [deck[1], deck[0]];
+                this.state.lotteryDeck = deck;
+                return;
+            }
+
+            // 1. 随机切牌（cut）
+            let cutPoint = Math.floor(Math.random() * n);
             deck = [...deck.slice(cutPoint), ...deck.slice(0, cutPoint)];
 
-            // 2. 然后执行交错洗牌
-            let splitPoint = Math.floor(deck.length / 2) + Math.floor(Math.random() * 6) - 3;
+            // 2. 交错洗牌（确保 splitPoint 在 [1, n-1] 内）
+            let splitPoint = Math.floor(n / 2) + Math.floor(Math.random() * 6) - 3;
+            splitPoint = Math.max(1, Math.min(splitPoint, n - 1));
+
             let a = deck.slice(0, splitPoint);
             let b = deck.slice(splitPoint);
-            
             const newDeck = [];
-            // 交错合并，增加随机性
+
             while (a.length > 0 || b.length > 0) {
                 // 随机决定从哪一堆开始
                 if (Math.random() < 0.5) {
@@ -917,17 +947,16 @@
 
                 // 随机抽取1-3张牌
                 let pullCount = Math.floor(Math.random() * 3) + 1;
-                
                 if (a.length > 0) {
                     newDeck.push(...a.splice(0, Math.min(pullCount, a.length)));
                 }
                 if (b.length > 0) {
-                    pullCount = Math.floor(Math.random() * 3) + 1; // 重新随机抽取数量
+                    pullCount = Math.floor(Math.random() * 3) + 1;
                     newDeck.push(...b.splice(0, Math.min(pullCount, b.length)));
                 }
             }
 
-            // 3. 最后再执行一次随机切牌
+            // 3. 最后一次随机切牌
             cutPoint = Math.floor(Math.random() * newDeck.length);
             this.state.lotteryDeck = [...newDeck.slice(cutPoint), ...newDeck.slice(0, cutPoint)];
         },
@@ -945,32 +974,38 @@
                 this.state.visualShuffleTween.kill();
             }
             
-            // 执行7次三分切牌
-            for(let i = 0; i < 7; i++) {
-                let deck = [...this.state.lotteryDeck];
-                const totalCards = deck.length;
-                
-                // 随机决定三份的大小（确保每份至少有1张牌）
-                let cut1 = Math.floor(Math.random() * (totalCards - 2)) + 1;
-                let remainingCards = totalCards - cut1;
-                let cut2 = Math.floor(Math.random() * (remainingCards - 1)) + 1;
-                let cut3 = remainingCards - cut2;
-                
-                // 分成三份
-                let pile1 = deck.slice(0, cut1);
-                let pile2 = deck.slice(cut1, cut1 + cut2);
-                let pile3 = deck.slice(cut1 + cut2);
-                
-                // 随机决定三份牌的重组顺序
-                const piles = [pile1, pile2, pile3];
-                const newDeck = [];
-                
-                while(piles.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * piles.length);
-                    newDeck.push(...piles.splice(randomIndex, 1)[0]);
+            // 执行 7 次三分切牌（仅在牌数足够时）
+            const totalCards = Array.isArray(this.state.lotteryDeck) ? this.state.lotteryDeck.length : 0;
+            if (totalCards >= 3) {
+                for (let i = 0; i < 7; i++) {
+                    const deck = [...this.state.lotteryDeck];
+                    // 随机决定三份的大小（确保每份至少有1张牌）
+                    const cut1 = Math.floor(Math.random() * (totalCards - 2)) + 1;
+                    const remainingCards = totalCards - cut1;
+                    const cut2 = Math.floor(Math.random() * (remainingCards - 1)) + 1;
+
+                    // 分成三份
+                    const pile1 = deck.slice(0, cut1);
+                    const pile2 = deck.slice(cut1, cut1 + cut2);
+                    const pile3 = deck.slice(cut1 + cut2);
+
+                    // 随机决定三份牌的重组顺序
+                    const piles = [pile1, pile2, pile3];
+                    const newDeck = [];
+                    while (piles.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * piles.length);
+                        newDeck.push(...piles.splice(randomIndex, 1)[0]);
+                    }
+                    this.state.lotteryDeck = newDeck;
                 }
-                
-                this.state.lotteryDeck = newDeck;
+            } else if (totalCards > 0) {
+                // 对于很小的牌组，直接做一次 Fisher–Yates 即可
+                this.fisherYatesShuffle(this.state.lotteryDeck);
+            }
+
+            // 最终再做一次 Fisher–Yates 洗牌以保证均匀性（保留视觉效果同时保证公平）
+            if (this.state.lotteryDeck && this.state.lotteryDeck.length > 1) {
+                this.fisherYatesShuffle(this.state.lotteryDeck);
             }
 
             // 牌组归位动画
@@ -1027,7 +1062,8 @@
         selectCard: function(selectedCard, lotIndex) {
             if (typeof LOT_DATA === 'undefined') return;
 
-            const lot = LOT_DATA[lotIndex];
+            // lotIndex 在 deck 中为 1..N，对应 LOT_DATA 的 id，因此索引时减 1
+            const lot = LOT_DATA[lotIndex - 1];
             
             // 禁用所有卡片点击
             this.elements.cardGrid.style.pointerEvents = 'none';
