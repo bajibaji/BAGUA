@@ -79,6 +79,7 @@
             transform: translate(-50%, -50%);
             z-index: -1;
             opacity: 0.08;
+            will-change: transform;
             animation: slow-rotate 120s linear infinite;
         }
 
@@ -521,6 +522,18 @@
             color: var(--primary-text);
             opacity: 0.8;
             margin-bottom: 30px;
+            animation: glow-blink 1.5s infinite alternate; /* 添加闪烁发光动画 */
+        }
+
+        @keyframes glow-blink {
+            0% {
+                opacity: 0.7;
+                text-shadow: 0 0 5px var(--glow-color);
+            }
+            100% {
+                opacity: 1;
+                text-shadow: 0 0 15px var(--glow-color), 0 0 25px var(--glow-color);
+            }
         }
 
         /* 选签界面 */
@@ -537,6 +550,7 @@
             opacity: 0.8;
             margin: 15px 0;
             flex-shrink: 0;
+            text-align: center; /* 添加这行 */
         }
         #card-grid {
             display: grid;
@@ -686,7 +700,7 @@
             
             <!-- [MODIFIED] 方式一：指定灵签 (R1: Slider) -->
             <div id="direct-method-container" class="method-container" style="display: none;">
-                <p>请滑动选择 1 至 49 之间的数字</p>
+                <p>滑动选择 1 至 49 之间的数字</p>
                 <div class="slider-value-display">
                     <span id="slider-value">1</span>
                 </div>
@@ -721,7 +735,7 @@
 
     <!-- [NEW] 选签容器 -->
     <div id="selection-container" class="fullscreen-overlay">
-        <div id="selection-prompt">请凭直觉选一张灵签</div>
+        <div id="selection-prompt">凭直觉选一张灵签</div>
         <div id="card-grid">
             <!-- 49张卡片将由JS生成 -->
         </div>
@@ -890,9 +904,9 @@
             // 启动视觉洗牌动画
             this.state.visualShuffleTween = gsap.to(this.elements.deckVisual, { 
                 duration: 0.1, 
-                x: () => Math.random() * 20 - 10, 
-                rotationY: () => Math.random() * 30 - 15,
-                rotationX: () => Math.random() * 10 - 5,
+                x: () => Math.random() * 40 - 20, // 增大位移幅度
+                rotationY: () => Math.random() * 70 - 30, // 增大Y轴旋转幅度
+                rotationX: () => Math.random() * 30 - 10, // 增大X轴旋转幅度
                 yoyo: true, 
                 repeat: -1,
                 ease: 'power1.inOut'
@@ -1072,7 +1086,7 @@
             const allCards = this.elements.cardGrid.children;
             gsap.to(Array.from(allCards).filter(c => c !== selectedCard), { 
                 opacity: 0.3, 
-                filter: 'blur(2px)', 
+                // filter: 'blur(2px)', // [OPTIMIZED] 移除模糊滤镜动画以提升移动端性能
                 duration: 0.3 
             });
             
