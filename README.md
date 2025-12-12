@@ -4,7 +4,8 @@
 
 服务器状态：[![Netlify Status](https://api.netlify.com/api/v1/badges/1f379702-6484-4b3a-af2c-e00964033597/deploy-status)](https://app.netlify.com/projects/qigua/deploys)
 
-
+### v0.1.9
+> 优化了灵签的页面和文本
 ### v0.1.8
 > 修复了灵签的算法随机性不够公平的问题
 ### v0.1.7
