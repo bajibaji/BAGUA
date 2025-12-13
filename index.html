@@ -2,560 +2,481 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>不可描述的工具 v1.2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>大道传真机 | 卜筮之道</title>
     
-    <!-- 预加载字体资源 -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;500;700&display=swap" as="style">
-    <link rel="preload" href="https://fonts.gstatic.com/s/notoserifsc/v22/H4c8BXePl9DZ0Xe7gG9cyOj7mm63ezdLEA.woff2" as="font" type="font/woff2" crossorigin>
+    <!-- 字体资源 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <!-- 引入 GSAP 动画库 -->
+    <!-- 引入 GSAP -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-    <!-- 引入 marked.js 用于解析 Markdown -->
+    <!-- 引入 marked.js -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- 引入 Tailwind (用于快速构建响应式结构) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Noto Serif SC"', 'serif'],
+                    },
+                    colors: {
+                        gold: {
+                            100: '#fcf6ba',
+                            300: '#fbf5b7',
+                            500: '#d4af37',
+                            700: '#b38728',
+                            900: '#aa771c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;500;700&display=swap');
-
         :root {
-            /* 核心调色板 - 暗色 (默认) */
-            --bg-color: #0a0a0a;
-            --bg-gradient: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #050505 100%);
+            /* --- 核心变量 --- */
+            --bg-dark: #050505;
+            --bg-light: #f5f7fa;
             
-            /* 玻璃拟态 - 高级感 */
-            --glass-bg: rgba(30, 30, 30, 0.4);
+            /* 鎏金文字渐变 */
+            --gold-text-gradient: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+            
+            /* 玻璃拟态 - 深色模式 (默认) */
+            --glass-bg: rgba(20, 20, 20, 0.6);
             --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-highlight: rgba(255, 255, 255, 0.05);
-            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-            --glass-blur: 20px;
-
-            /* 文本 */
-            --primary-text: #e0e0e0;
-            --secondary-text: #888;
+            --glass-shine: rgba(255, 255, 255, 0.03);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             
-            /* 鎏金特效 */
-            --gold-gradient: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
-            --title-color: #d4af37;
-            
-            /* 卡片交互 */
-            --card-hover-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-            --card-hover-border: rgba(212, 175, 55, 0.3);
+            /* 卡片高亮 */
+            --card-hover-border: rgba(212, 175, 55, 0.4);
         }
-        
-        /* 明亮主题 - 雅致白金 */
-        :root.light-theme {
-            --bg-color: #f0f2f5;
-            --bg-gradient: radial-gradient(circle at 50% 50%, #ffffff 0%, #e6e9f0 100%);
-            
-            --glass-bg: rgba(255, 255, 255, 0.65);
-            --glass-border: rgba(255, 255, 255, 0.4);
-            --glass-highlight: rgba(255, 255, 255, 0.8);
-            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-            
-            --primary-text: #2c3e50;
-            --secondary-text: #596775;
-            
-            --title-color: #9c7c38;
-            --card-hover-border: rgba(156, 124, 56, 0.3);
+
+        /* 浅色模式变量 */
+        html.light-theme {
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-shine: rgba(255, 255, 255, 0.4);
+            --glass-shadow: 0 8px 32px rgba(100, 116, 139, 0.15);
         }
 
         body {
             font-family: 'Noto Serif SC', serif;
-            background-color: var(--bg-color);
-            background-image: var(--bg-gradient);
-            color: var(--primary-text);
-            margin: 0;
-            padding: 0;
-            /* 修复布局核心：使用 Flex + Margin Auto 实现安全居中 */
-            display: flex;
-            min-height: 100vh;
-            /* 防止子元素被纵向拉伸为 100vh，使容器高度随内容决定 */
-            align-items: flex-start;
-            -webkit-tap-highlight-color: transparent;
-            transition: background-color 0.8s ease;
-            /* 关键修复：允许垂直滚动，防止内容被切掉 */
-            overflow-y: auto; 
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 30%, #1a1a1a 0%, #000000 100%);
+            color: #e5e5e5;
+            transition: background 0.8s ease, color 0.5s ease;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* 噪点纹理 */
+        html.light-theme body {
+            background-color: var(--bg-light);
+            background-image: radial-gradient(circle at 50% 30%, #ffffff 0%, #eef2f6 100%);
+            color: #2d3748;
+        }
+
+        /* 噪点纹理 - 增加胶片感 */
         .noise-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 9999;
-            opacity: 0.03;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: 0.04;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
         /* 旋转八卦背景 */
-        #background-bagua {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            width: 85vmax;
-            height: 85vmax;
+        #bg-bagua {
+            position: fixed; top: 50%; left: 50%;
+            width: 80vmax; height: 80vmax;
             transform: translate(-50%, -50%);
-            z-index: -1;
-            opacity: 0.04; 
-            animation: slow-rotate 180s linear infinite;
-            filter: blur(2px);
+            z-index: 0; opacity: 0.05; pointer-events: none;
+            filter: blur(1px);
+            animation: rotateBagua 120s linear infinite;
+            color: #fff;
         }
+        html.light-theme #bg-bagua { color: #000; opacity: 0.03; }
 
-        @keyframes slow-rotate {
+        @keyframes rotateBagua {
             from { transform: translate(-50%, -50%) rotate(0deg); }
             to { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
-        /* 玻璃拟态容器 */
+        /* 通用玻璃拟态类 */
         .glass-panel {
             background: var(--glass-bg);
-            backdrop-filter: blur(var(--glass-blur));
-            -webkit-backdrop-filter: blur(var(--glass-blur));
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            border-top: 1px solid var(--glass-highlight);
             box-shadow: var(--glass-shadow);
-            border-radius: 24px;
         }
 
-        .container {
-            max-width: 650px; /* 根据2x2卡片布局精确调整，使其更紧凑 */
-            height: 750px;
-            width: 90%;
-            /* 压缩上下内边距，更紧凑 */
-            padding: 25px 30px; 
-            text-align: center;
-            position: relative;
-            z-index: 1;
-            opacity: 1; 
-            visibility: visible;
-            /* 核心修复：配合 body 的 display:flex，实现安全居中 */
-            /* 水平居中，垂直留白由 align-items 控制 */
-            margin: auto;
-            margin-bottom: ;
-        }
-
-        h1 { 
-            font-weight: 700; 
-            font-size: 3.5em; 
-            margin-bottom: -15px;
-            letter-spacing: 8px;
-            background: var(--gold-gradient);
+        /* 标题鎏金效果 */
+        .text-gold-gradient {
+            background: var(--gold-text-gradient);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            text-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            position: relative;
-            display: inline-block;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        .subtitle {
-            font-size: 1.1em;
-            letter-spacing: 2px;
-            color: var(--secondary-text);
-            /* 减少副标题行距与间距，节省空间 */
-            line-height: 1.15;
-            margin-bottom: -18px; 
-            font-weight: 300;
-        }
-
-        /* * 布局修复：Flexbox 布局
-         * 保持 2x2 矩阵，但允许在小屏幕上自动流式换行
-         */
-        .nav-wrapper { 
-            display: flex;
-            justify-content: center; /* 水平居中 */
-            flex-wrap: wrap; /* 自动换行 */
-            /* 减小间距，让排版更紧凑 */
-            gap: 20px; 
-            max-width: 100%; /* 填满container */
-            margin: 0 auto;
-            perspective: 1000px; 
-        }
-
+        /* 导航卡片 */
         .nav-card {
             position: relative;
-            text-decoration: none;
-            color: var(--primary-text);
-            padding: 25px 20px; /* 稍微调小内边距 */
-            
-            /* 固定卡片宽度，确保整齐 */
-            width: 280px; 
-            flex: 0 0 auto; 
-            
-            box-sizing: border-box;
-            transition: transform 0.2s ease, box-shadow 0.2s ease; 
-            cursor: pointer;
             overflow: hidden;
             transform-style: preserve-3d;
-            background: rgba(40, 40, 40, 0.3);
-            opacity: 1;
-            visibility: visible;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        
-        .light-theme .nav-card {
-            background: rgba(255, 255, 255, 0.4);
+            transition: transform 0.1s ease, box-shadow 0.3s ease, border-color 0.3s ease;
         }
 
-        /* 卡片光泽扫光 */
-        .nav-card::before {
+        /* 卡片扫光特效 */
+        .nav-card::after {
             content: '';
             position: absolute;
-            top: 0; left: -100%;
-            width: 50%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+            top: 0; left: -150%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
             transform: skewX(-25deg);
-            transition: 0.5s;
             pointer-events: none;
+            transition: left 0.6s ease;
         }
-        .nav-card:hover::before {
-            left: 150%;
-            transition: 0.7s;
-        }
-
-        .nav-card h2 {
-            font-size: 1.6em;
-            margin: 0 0 10px 0;
-            color: var(--title-color);
-            transition: color 0.3s;
-            font-weight: 500;
+        
+        /* 仅在非移动端启用 hover 扫光 */
+        @media (hover: hover) {
+            .nav-card:hover::after { left: 150%; }
         }
 
-        .nav-card:hover h2 {
-            background: var(--gold-gradient);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .nav-card p {
-            font-size: 0.85em;
-            color: var(--secondary-text);
-            line-height: 1.6;
-            margin: 0;
-            transition: color 0.3s;
-        }
-        .nav-card:hover p {
-            color: var(--primary-text);
-        }
-
-        /* 顶部按钮 */
-        .top-controls {
-            position: fixed;
-            top: 25px;
-            width: 100%;
-            padding: 0 40px;
-            box-sizing: border-box;
-            display: flex;
-            justify-content: space-between;
-            z-index: 100;
-            pointer-events: none; 
-        }
-
-        .control-btn {
-            background: transparent;
-            border: 1px solid transparent;
-            cursor: pointer;
-            font-family: 'Noto Serif SC', serif;
-            color: var(--secondary-text);
-            font-size: 0.9rem;
-            padding: 8px 16px;
-            border-radius: 20px;
-            transition: all 0.3s ease;
-            pointer-events: auto;
-            backdrop-filter: blur(4px);
-        }
-
-        .control-btn:hover {
-            color: var(--title-color);
-            border-color: rgba(212, 175, 55, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        #theme-icon-light { display: none; }
-        .light-theme #theme-icon-dark { display: none; }
-        .light-theme #theme-icon-light { display: inline; }
+        /* 自定义滚动条 */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(136, 136, 136, 0.3); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(212, 175, 55, 0.6); }
 
         /* 更新日志模态框 */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.6); 
-            backdrop-filter: blur(8px);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 1000; opacity: 0; pointer-events: none;
-            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        
-        .modal-content {
-            padding: 40px; 
-            max-width: 90%; width: 700px;
-            max-height: 80vh; overflow-y: auto; position: relative;
-            transform: scale(0.9) translateY(20px); 
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            scrollbar-width: thin;
-            scrollbar-color: var(--title-color) transparent;
-        }
-        
-        .modal-overlay.active .modal-content { transform: scale(1) translateY(0); }
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .modal-exit { opacity: 1; transform: scale(1); }
+        .modal-exit-active { opacity: 0; transform: scale(0.95); transition: all 0.2s ease-in; }
 
-        .modal-close {
-            position: absolute; top: 20px; right: 25px; 
-            background: none; border: none;
-            font-size: 2rem; color: var(--secondary-text); 
-            cursor: pointer; transition: 0.3s;
+        /* Markdown 内容样式覆盖 */
+        .markdown-body h1, .markdown-body h2 { 
+            color: #d4af37; border-bottom: 1px solid rgba(136,136,136,0.2); 
+            padding-bottom: 0.3em; margin-top: 1em;
         }
-        .modal-close:hover { color: var(--title-color); transform: rotate(90deg); }
-
-        #changelog-content { text-align: left; color: var(--primary-text); }
-        #changelog-content h1, #changelog-content h2 { 
-            border-bottom: 1px solid var(--glass-border); 
-            color: var(--title-color); 
-        }
-        #changelog-content code { background: rgba(128,128,128,0.2); color: var(--title-color); }
-
-        @media (max-width: 768px) {
-            .container { padding: 30px 20px; width: 92%; }
-            h1 { font-size: 2.2em; letter-spacing: 4px; }
-            .subtitle { font-size: 0.95em; margin-bottom: 20px; line-height: 1.15; }
-            
-            /* 移动端适配 */
-            .nav-wrapper { 
-                gap: 20px;
-            }
-            .nav-card { 
-                /* 移动端强制占满，不使用固定宽度 */
-                width: 100%; 
-                padding: 25px 20px; 
-            }
-            
-            .top-controls { padding: 0 20px; }
-            #background-bagua { opacity: 0.03; }
-        }
+        html.light-theme .markdown-body h1, html.light-theme .markdown-body h2 { color: #9c7c38; }
+        .markdown-body p { margin: 0.8em 0; line-height: 1.7; }
+        .markdown-body ul { list-style: disc; padding-left: 1.5em; margin: 0.5em 0; }
+        .markdown-body code { background: rgba(128,128,128,0.15); padding: 2px 5px; border-radius: 4px; font-family: monospace; }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 selection:bg-gold-500 selection:text-white">
 
-    <!-- 噪点层 -->
+    <!-- 噪点 -->
     <div class="noise-overlay"></div>
 
-    <!-- 背景八卦 -->
-    <div id="background-bagua">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" color="var(--primary-text)">
+    <!-- 背景八卦 SVG -->
+    <div id="bg-bagua">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">
             <defs>
-                <g id="yang-line"><path d="M -4.5,0 L 4.5,0" stroke-width="1.5" stroke-linecap="butt"></path></g>
-                <g id="yin-line"><path d="M -4.5,0 L -1.5,0 M 1.5,0 L 4.5,0" stroke-width="1.5" stroke-linecap="butt"></path></g>
+                <g id="yang"><path d="M -4.5,0 L 4.5,0" stroke-width="1.5"></path></g>
+                <g id="yin"><path d="M -4.5,0 L -1.5,0 M 1.5,0 L 4.5,0" stroke-width="1.5"></path></g>
             </defs>
             <g stroke-width="0.5">
-                <circle cx="50" cy="50" r="48"></circle><circle cx="50" cy="50" r="44"></circle>
-                <circle cx="50" cy="50" r="35"></circle><circle cx="50" cy="50" r="34"></circle>
-                <circle cx="50" cy="50" r="26"></circle><circle cx="50" cy="50" r="25"></circle>
-                <circle cx="50" cy="50" r="17"></circle><circle cx="50" cy="50" r="16"></circle>
+                <circle cx="50" cy="50" r="48"/><circle cx="50" cy="50" r="44"/>
+                <circle cx="50" cy="50" r="35"/><circle cx="50" cy="50" r="34"/>
+                <circle cx="50" cy="50" r="26"/><circle cx="50" cy="50" r="25"/>
+                <circle cx="50" cy="50" r="17"/><circle cx="50" cy="50" r="16"/>
             </g>
+            <!-- 太极鱼 -->
             <g stroke-width="0">
-                <path d="M50 16 A 34 34 0 0 0 50 84 Z" fill="var(--bg-color)"></path>
-                <path d="M50 16 A 34 34 0 0 1 50 84 Z" fill="currentColor"></path>
-                <circle cx="50" cy="67" r="17" fill="currentColor"></circle>
-                <circle cx="50" cy="33" r="17" fill="var(--bg-color)"></circle>
-                <circle cx="50" cy="33" r="4" fill="currentColor"></circle>
-                <circle cx="50" cy="67" r="4" fill="var(--bg-color)"></circle>
+                <path d="M50 16 A 34 34 0 0 0 50 84 A 34 34 0 0 1 50 16 Z" fill="rgba(0,0,0,0.1)" class="dark:fill-white/10"/>
+                <path d="M50 84 A 34 34 0 0 1 50 16 A 34 34 0 0 0 50 84 Z" fill="currentColor"/>
+                <circle cx="50" cy="67" r="4" fill="var(--bg-dark)" class="light-theme-fill"/>
+                <circle cx="50" cy="33" r="4" fill="currentColor"/>
             </g>
+            <!-- 卦象 (保持原有逻辑) -->
             <g transform="translate(50 50)">
-                 <g transform="translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
-                 <g transform="rotate(45) translate(0, -39.5)"><use href="#yin-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
-                 <g transform="rotate(90) translate(0, -39.5)"><use href="#yin-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
-                 <g transform="rotate(135) translate(0, -39.5)"><use href="#yin-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
-                 <g transform="rotate(180) translate(0, -39.5)"><use href="#yin-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
-                 <g transform="rotate(225) translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
-                 <g transform="rotate(270) translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
-                 <g transform="rotate(315) translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
+                 <g transform="translate(0, -39.5)"><use href="#yang" y="3"/><use href="#yang" y="0"/><use href="#yang" y="-3"/></g>
+                 <g transform="rotate(45) translate(0, -39.5)"><use href="#yin" y="3"/><use href="#yang" y="0"/><use href="#yang" y="-3"/></g>
+                 <g transform="rotate(90) translate(0, -39.5)"><use href="#yin" y="3"/><use href="#yang" y="0"/><use href="#yin" y="-3"/></g>
+                 <g transform="rotate(135) translate(0, -39.5)"><use href="#yin" y="3"/><use href="#yin" y="0"/><use href="#yang" y="-3"/></g>
+                 <g transform="rotate(180) translate(0, -39.5)"><use href="#yin" y="3"/><use href="#yin" y="0"/><use href="#yin" y="-3"/></g>
+                 <g transform="rotate(225) translate(0, -39.5)"><use href="#yang" y="3"/><use href="#yin" y="0"/><use href="#yin" y="-3"/></g>
+                 <g transform="rotate(270) translate(0, -39.5)"><use href="#yang" y="3"/><use href="#yin" y="0"/><use href="#yang" y="-3"/></g>
+                 <g transform="rotate(315) translate(0, -39.5)"><use href="#yang" y="3"/><use href="#yang" y="0"/><use href="#yin" y="-3"/></g>
             </g>
         </svg>
     </div>
 
-    <div class="top-controls">
-        <button id="changelog-toggle" class="control-btn" title="更新日志">更新日誌</button>
-        <button id="theme-toggle" class="control-btn" title="切换主题">
-            <span id="theme-icon-dark">夜</span>
-            <span id="theme-icon-light">日</span>
-        </button>
-    </div>
-    
-    <div class="container glass-panel" id="main-container">
-        <div id="intro-section">
-            <h1 class="anim-title">大道传真机</h1>
-            <p class="subtitle anim-subtitle">小蚂蚁们偷偷窥探时间投影切片，可趋吉避凶。</p>
+    <!-- 顶部控制栏 -->
+    <header class="fixed top-0 left-0 w-full p-6 flex justify-between items-center z-40 pointer-events-none">
+        <div class="pointer-events-auto">
+            <!-- 左侧预留，如果未来有Logo -->
+        </div>
+        <div class="flex gap-4 pointer-events-auto">
+            <button id="btn-changelog" class="group relative px-4 py-2 rounded-full border border-white/10 bg-black/20 backdrop-blur-md text-sm text-gray-400 hover:text-gold-500 hover:border-gold-500/30 transition-all duration-300">
+                <span class="relative z-10">更新日誌</span>
+                <div class="absolute inset-0 rounded-full bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
+            <button id="btn-theme" class="w-10 h-10 rounded-full border border-white/10 bg-black/20 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-gold-500 hover:border-gold-500/30 transition-all duration-300">
+                <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主容器 -->
+    <main class="relative z-10 w-full max-w-2xl mb-12">
+        <div class="glass-panel rounded-3xl pt-8 px-8 pb-20 sm:pt-12 sm:px-12 sm:pb-24 transition-all duration-500" id="main-card">
+            
+            <!-- 标题区 -->
+            <div class="text-center mb-2" id="header-section">
+                <h1 class="text-4xl sm:text-6xl font-bold tracking-[0.2em] mb-4 text-gold-gradient leading-tight inline-block relative">
+                    大道传真机
+                </h1>
+                <p class="text-gray-400 font-light tracking-widest text-sm sm:text-base opacity-80 mt-2">
+                    小蚂蚁们偷偷窥探时间投影切片，可趋吉避凶。
+                </p>
+                <div class="w-16 h-[1px] bg-gradient-to-r from-transparent via-gold-500/50 to-transparent mx-auto mt-3"></div>
+            </div>
+
+            <!-- 导航网格: 移动端单列，PC端双列 -->
+            <nav class="grid grid-cols-1 sm:grid-cols-2 gap-6" id="nav-grid">
+                
+                <a href="./Dayanshifa/index.html" class="nav-card group rounded-xl p-2 border border-white/5 bg-white/5 hover:bg-white/10 hover:border-gold-500/30 cursor-pointer">
+                    <div class="relative z-10">
+                        <h2 class="text-2xl mb-3 text-gold-500 group-hover:text-gold-300 transition-colors font-medium">大衍筮法</h2>
+                        <p class="text-sm text-gray-500 group-hover:text-gray-300 transition-colors leading-relaxed">
+                            源自《周易》，五十蓍草，衍天地之数，断吉凶祸福。
+                        </p>
+                    </div>
+                </a>
+
+                <a href="./zhugeshenshu/index.html" class="nav-card group rounded-xl p-2 border border-white/5 bg-white/5 hover:bg-white/10 hover:border-gold-500/30 cursor-pointer">
+                    <div class="relative z-10">
+                        <h2 class="text-2xl mb-3 text-gold-500 group-hover:text-gold-300 transition-colors font-medium">诸葛神数</h2>
+                        <p class="text-sm text-gray-500 group-hover:text-gray-300 transition-colors leading-relaxed">
+                            相传武侯所创，三百八十四签，字中藏玄机，解心中之惑。
+                        </p>
+                    </div>
+                </a>
+
+                <a href="./linqian/index.html" class="nav-card group rounded-xl p-2 border border-white/5 bg-white/5 hover:bg-white/10 hover:border-gold-500/30 cursor-pointer">
+                    <div class="relative z-10">
+                        <h2 class="text-2xl mb-3 text-gold-500 group-hover:text-gold-300 transition-colors font-medium">玄天上帝靈籤</h2>
+                        <p class="text-sm text-gray-500 group-hover:text-gray-300 transition-colors leading-relaxed">
+                            天地神祗，万物皆知。吾今下课，善恶扶持。
+                        </p>
+                    </div>
+                </a>
+
+                <a href="https://xiao6.netlify.app/" target="_blank" class="nav-card group rounded-xl p-2 border border-white/5 bg-white/5 hover:bg-white/10 hover:border-gold-500/30 cursor-pointer">
+                    <div class="relative z-10">
+                        <h2 class="text-2xl mb-3 text-gold-500 group-hover:text-gold-300 transition-colors font-medium">小六壬</h2>
+                        <p class="text-sm text-gray-500 group-hover:text-gray-300 transition-colors leading-relaxed">
+                            古之占術，掐指知機，吉凶禍福，盡在掌中。
+                        </p>
+                    </div>
+                </a>
+
+            </nav>
         </div>
         
-        <div class="nav-wrapper">
-            <a href="./Dayanshifa/index.html" class="nav-card glass-panel anim-card">
-                <div class="card-content">
-                    <h2>大衍筮法</h2>
-                    <p>源自《周易》，五十蓍草，衍天地之数，断吉凶祸福。</p>
-                </div>
-            </a>
-            <a href="./zhugeshenshu/index.html" class="nav-card glass-panel anim-card">
-                <div class="card-content">
-                    <h2>诸葛神数</h2>
-                    <p>相传武侯所创，三百八十四签，字中藏玄机，解心中之惑。</p>
-                </div>
-            </a>
-            <a href="./linqian/index.html" class="nav-card glass-panel anim-card">
-                <div class="card-content">
-                    <h2>玄天上帝靈籤</h2>
-                    <p>天地神祗，万物皆知。吾今下课，善恶扶持。</p>
-                </div>
-            </a>
-            <a href="https://xiao6.netlify.app/" class="nav-card glass-panel anim-card">
-                <div class="card-content">
-                    <h2>小六壬</h2>
-                    <p>古之占術，掐指知機，吉凶禍福，盡在掌中。</p>
-                </div>
-            </a>
-        </div>
-    </div>
+        <!-- 底部版权/声明 -->
+        <footer class="mt-8 text-center text-xs text-gray-600 font-light tracking-wider opacity-60">
+            v1.3 · 蛋卷 2025
+        </footer>
+    </main>
 
-    <div id="changelog-modal" class="modal-overlay">
-        <div class="modal-content glass-panel">
-            <button class="modal-close">&times;</button>
-            <h2 style="text-align: center; color: var(--title-color); margin-top: 0;">更新日志</h2>
-            <div id="changelog-content"><p>正在加载...</p></div>
+    <!-- 更新日志模态框 (全屏覆盖) -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden opacity-0 flex items-center justify-center p-4 transition-opacity duration-300">
+        <div id="modal-content" class="glass-panel w-full max-w-2xl max-h-[85vh] rounded-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-300">
+            <!-- 模态框头部 -->
+            <div class="flex justify-between items-center p-6 border-b border-white/10">
+                <h3 class="text-xl font-medium text-gold-500">更新日志</h3>
+                <button id="modal-close" class="text-gray-400 hover:text-white transition-colors text-2xl leading-none">&times;</button>
+            </div>
+            <!-- 模态框内容 (可滚动) -->
+            <div id="changelog-text" class="p-6 overflow-y-auto custom-scrollbar markdown-body text-gray-300 text-sm sm:text-base bg-black/20">
+                <div class="flex justify-center py-8">
+                    <div class="animate-pulse text-gold-500/50">正在读取天机...</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-        
-        if (typeof gsap !== 'undefined') {
-            const tl = gsap.timeline();
-            
-            // 1. 容器淡入
-            tl.from('.container', { 
-                duration: 1.0,
-                opacity: 0,
-                ease: "power2.out"
-            })
-            
-            // 2. 标题模糊消除进场
-            .from('.anim-title', {
-                duration: 1.2,
-                y: 40,
-                opacity: 0,
-                filter: 'blur(10px)',
-                ease: "power4.out"
-            }, "-=0.5")
-            
-            .from('.anim-subtitle', {
-                duration: 1.0,
-                y: 20,
-                opacity: 0,
-                filter: 'blur(5px)',
-                ease: "power3.out"
-            }, "-=0.8")
-            
-            // 3. 卡片交错弹入
-            .from('.anim-card', {
-                duration: 0.8,
-                y: 50,
-                opacity: 0,
-                stagger: 0.15,
-                ease: "back.out(1.2)"
-            }, "-=0.6");
+        // --- 1. GSAP 进场动画 ---
+        const tl = gsap.timeline();
 
-            // --- 桌面端交互 ---
-            if (!isMobile) {
-                const cards = document.querySelectorAll('.nav-card');
-                cards.forEach(card => {
-                    card.addEventListener('mousemove', (e) => {
-                        const rect = card.getBoundingClientRect();
-                        const x = e.clientX - rect.left;
-                        const y = e.clientY - rect.top;
-                        const xPct = (x / rect.width - 0.5) * 20;
-                        const yPct = (y / rect.height - 0.5) * 20;
-                        
-                        gsap.to(card, {
-                            duration: 0.4,
-                            rotateY: xPct,
-                            rotateX: -yPct,
-                            scale: 1.05,
-                            boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
-                            borderColor: 'var(--card-hover-border)',
-                            ease: "power2.out",
-                            transformPerspective: 1000
-                        });
-                    });
+        // 容器浮现
+        tl.from('#main-card', {
+            duration: 1.2,
+            y: 30,
+            opacity: 0,
+            ease: "power3.out"
+        })
+        // 标题文字模糊消除效果
+        .from('#header-section h1', {
+            duration: 1.5,
+            y: 20,
+            opacity: 0,
+            filter: "blur(15px)",
+            ease: "power2.out"
+        }, "-=0.8")
+        .from('#header-section p', {
+            duration: 1.0,
+            opacity: 0,
+            y: 10,
+            ease: "power2.out"
+        }, "-=1.0")
+        // 卡片交错上升
+        .from('.nav-card', {
+            duration: 0.8,
+            y: 40,
+            opacity: 0,
+            stagger: 0.1,
+            ease: "back.out(1.4)"
+        }, "-=0.5");
+
+        // --- 2. 交互逻辑 (3D Tilt & 触摸反馈) ---
+        const cards = document.querySelectorAll('.nav-card');
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+        if (!isMobile) {
+            // PC端：3D 倾斜效果
+            cards.forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
                     
-                    card.addEventListener('mouseleave', () => {
-                        gsap.to(card, {
-                            duration: 0.6,
-                            rotateY: 0,
-                            rotateX: 0,
-                            scale: 1,
-                            boxShadow: 'var(--glass-shadow)',
-                            borderColor: 'var(--glass-border)',
-                            ease: "elastic.out(1, 0.5)"
-                        });
+                    // 计算倾斜角度 (中心点为0)
+                    const xPct = (x / rect.width - 0.5) * 15; // X轴旋转度数
+                    const yPct = (y / rect.height - 0.5) * 15; // Y轴旋转度数
+
+                    gsap.to(card, {
+                        duration: 0.3,
+                        rotateY: xPct,   // 鼠标横向移动导致绕Y轴旋转
+                        rotateX: -yPct,  // 鼠标纵向移动导致绕X轴旋转
+                        scale: 1.02,
+                        borderColor: 'rgba(212, 175, 55, 0.4)',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                        ease: "power2.out",
+                        transformPerspective: 1000
                     });
                 });
 
-                window.addEventListener('mousemove', (e) => {
-                    const x = (e.clientX / window.innerWidth - 0.5) * 20;
-                    const y = (e.clientY / window.innerHeight - 0.5) * 20;
-                    gsap.to('#background-bagua', { duration: 2, x: x, y: y, ease: "power1.out" });
+                card.addEventListener('mouseleave', () => {
+                    gsap.to(card, {
+                        duration: 0.6,
+                        rotateY: 0,
+                        rotateX: 0,
+                        scale: 1,
+                        borderColor: 'rgba(255, 255, 255, 0.05)',
+                        boxShadow: 'none',
+                        ease: "elastic.out(1, 0.6)"
+                    });
                 });
+            });
+        } else {
+            // 移动端：简单的按下缩放反馈
+            cards.forEach(card => {
+                card.addEventListener('touchstart', () => {
+                    gsap.to(card, { scale: 0.96, duration: 0.1, borderColor: 'rgba(212, 175, 55, 0.3)' });
+                });
+                card.addEventListener('touchend', () => {
+                    gsap.to(card, { scale: 1, duration: 0.2, borderColor: 'rgba(255, 255, 255, 0.05)' });
+                });
+            });
+        }
+
+        // --- 3. 主题切换 ---
+        const themeBtn = document.getElementById('btn-theme');
+        const html = document.documentElement;
+        const iconSun = document.getElementById('icon-sun');
+        const iconMoon = document.getElementById('icon-moon');
+        const bgBagua = document.getElementById('bg-bagua');
+        const lightFill = bgBagua.querySelector('.light-theme-fill');
+
+        // 初始化主题
+        const savedTheme = localStorage.getItem('homepage-theme');
+        if (savedTheme === 'light') {
+            enableLightMode();
+        }
+
+        themeBtn.addEventListener('click', () => {
+            // 添加转场遮罩效果
+            gsap.to('body', { opacity: 0.5, duration: 0.2, onComplete: () => {
+                if (html.classList.contains('light-theme')) {
+                    disableLightMode();
+                } else {
+                    enableLightMode();
+                }
+                gsap.to('body', { opacity: 1, duration: 0.2 });
+            }});
+        });
+
+        function enableLightMode() {
+            html.classList.add('light-theme');
+            iconSun.classList.remove('hidden');
+            iconMoon.classList.add('hidden');
+            if(lightFill) lightFill.setAttribute('fill', '#f5f7fa'); 
+            localStorage.setItem('homepage-theme', 'light');
+        }
+
+        function disableLightMode() {
+            html.classList.remove('light-theme');
+            iconSun.classList.add('hidden');
+            iconMoon.classList.remove('hidden');
+            if(lightFill) lightFill.setAttribute('fill', '#050505');
+            localStorage.setItem('homepage-theme', 'dark');
+        }
+
+        // --- 4. 模态框逻辑 ---
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const modalContent = document.getElementById('modal-content');
+        const btnChangelog = document.getElementById('btn-changelog');
+        const btnClose = document.getElementById('modal-close');
+        const changelogText = document.getElementById('changelog-text');
+
+        function openModal() {
+            modalBackdrop.classList.remove('hidden');
+            // 强制重绘以触发 transition
+            modalBackdrop.offsetHeight; 
+            modalBackdrop.classList.remove('opacity-0');
+            modalContent.classList.remove('scale-95');
+            
+            // 加载内容
+            if (changelogText.innerText.includes('正在读取')) {
+                fetch('README.md')
+                    .then(res => res.ok ? res.text() : Promise.reject())
+                    .then(text => {
+                        changelogText.innerHTML = marked.parse(text);
+                    })
+                    .catch(() => {
+                        changelogText.innerHTML = '<p class="text-center text-gray-500 py-8">暂无更新日志，或命运之门未开启。</p>';
+                    });
             }
         }
 
-        initTheme();
-        initChangelogModal();
-        if (window.marked) { marked.setOptions({ breaks: true, gfm: true }); }
-    });
+        function closeModal() {
+            modalBackdrop.classList.add('opacity-0');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                modalBackdrop.classList.add('hidden');
+            }, 300);
+        }
 
-    function initTheme() {
-        const themeToggle = document.getElementById('theme-toggle');
-        const savedTheme = localStorage.getItem('homepage-theme');
-        if (savedTheme === 'light') document.documentElement.classList.add('light-theme');
-        
-        themeToggle.addEventListener('click', () => {
-            if (typeof gsap !== 'undefined') {
-                gsap.to('body', { opacity: 0.5, duration: 0.2, onComplete: () => {
-                    document.documentElement.classList.toggle('light-theme');
-                    const currentTheme = document.documentElement.classList.contains('light-theme') ? 'light' : 'dark';
-                    localStorage.setItem('homepage-theme', currentTheme);
-                    gsap.to('body', { opacity: 1, duration: 0.2 });
-                }});
-            } else {
-                document.documentElement.classList.toggle('light-theme');
-                const currentTheme = document.documentElement.classList.contains('light-theme') ? 'light' : 'dark';
-                localStorage.setItem('homepage-theme', currentTheme);
-            }
+        btnChangelog.addEventListener('click', openModal);
+        btnClose.addEventListener('click', closeModal);
+        modalBackdrop.addEventListener('click', (e) => {
+            if (e.target === modalBackdrop) closeModal();
         });
-    }
-
-    function initChangelogModal() {
-        const modal = document.getElementById('changelog-modal');
-        const openBtn = document.getElementById('changelog-toggle');
-        const closeBtn = modal.querySelector('.modal-close');
-        const contentDiv = document.getElementById('changelog-content');
-
-        const openModal = () => {
-            modal.classList.add('active');
-            if (contentDiv.innerHTML.includes('正在加载')) {
-                fetch('README.md')
-                    .then(r => r.ok ? r.text() : Promise.reject('Fail'))
-                    .then(text => contentDiv.innerHTML = window.marked ? marked.parse(text) : text)
-                    .catch(() => contentDiv.textContent = '暂无更新日志或加载失败。');
-            }
-        };
-        const closeModal = () => modal.classList.remove('active');
-        openBtn.addEventListener('click', openModal);
-        closeBtn.addEventListener('click', closeModal);
-        modal.addEventListener('click', e => e.target === modal && closeModal());
-    }
+    });
     </script>
 </body>
 </html>
