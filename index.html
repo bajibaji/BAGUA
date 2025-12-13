@@ -178,34 +178,34 @@
 
     <!-- 背景八卦 SVG -->
     <div id="bg-bagua">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" color="var(--primary-text)">
             <defs>
-                <g id="yang"><path d="M -4.5,0 L 4.5,0" stroke-width="1.5"></path></g>
-                <g id="yin"><path d="M -4.5,0 L -1.5,0 M 1.5,0 L 4.5,0" stroke-width="1.5"></path></g>
+                <g id="yang-line"><path d="M -4.5,0 L 4.5,0" stroke-width="1.5" stroke-linecap="butt"></path></g>
+                <g id="yin-line"><path d="M -4.5,0 L -1.5,0 M 1.5,0 L 4.5,0" stroke-width="1.5" stroke-linecap="butt"></path></g>
             </defs>
             <g stroke-width="0.5">
-                <circle cx="50" cy="50" r="48"/><circle cx="50" cy="50" r="44"/>
-                <circle cx="50" cy="50" r="35"/><circle cx="50" cy="50" r="34"/>
-                <circle cx="50" cy="50" r="26"/><circle cx="50" cy="50" r="25"/>
-                <circle cx="50" cy="50" r="17"/><circle cx="50" cy="50" r="16"/>
+                <circle cx="50" cy="50" r="48"></circle><circle cx="50" cy="50" r="44"></circle>
+                <circle cx="50" cy="50" r="35"></circle><circle cx="50" cy="50" r="34"></circle>
+                <circle cx="50" cy="50" r="26"></circle><circle cx="50" cy="50" r="25"></circle>
+                <circle cx="50" cy="50" r="17"></circle><circle cx="50" cy="50" r="16"></circle>
             </g>
-            <!-- 太极鱼 -->
             <g stroke-width="0">
-                <path d="M50 16 A 34 34 0 0 0 50 84 A 34 34 0 0 1 50 16 Z" fill="rgba(0,0,0,0.1)" class="dark:fill-white/10"/>
-                <path d="M50 84 A 34 34 0 0 1 50 16 A 34 34 0 0 0 50 84 Z" fill="currentColor"/>
-                <circle cx="50" cy="67" r="4" fill="var(--bg-dark)" class="light-theme-fill"/>
-                <circle cx="50" cy="33" r="4" fill="currentColor"/>
+                <path d="M50 16 A 34 34 0 0 0 50 84 Z" fill="var(--bg-color)"></path>
+                <path d="M50 16 A 34 34 0 0 1 50 84 Z" fill="currentColor"></path>
+                <circle cx="50" cy="67" r="17" fill="currentColor"></circle>
+                <circle cx="50" cy="33" r="17" fill="var(--bg-color)"></circle>
+                <circle cx="50" cy="33" r="4" fill="currentColor"></circle>
+                <circle cx="50" cy="67" r="4" fill="var(--bg-color)"></circle>
             </g>
-            <!-- 卦象 (保持原有逻辑) -->
             <g transform="translate(50 50)">
-                 <g transform="translate(0, -39.5)"><use href="#yang" y="3"/><use href="#yang" y="0"/><use href="#yang" y="-3"/></g>
-                 <g transform="rotate(45) translate(0, -39.5)"><use href="#yin" y="3"/><use href="#yang" y="0"/><use href="#yang" y="-3"/></g>
-                 <g transform="rotate(90) translate(0, -39.5)"><use href="#yin" y="3"/><use href="#yang" y="0"/><use href="#yin" y="-3"/></g>
-                 <g transform="rotate(135) translate(0, -39.5)"><use href="#yin" y="3"/><use href="#yin" y="0"/><use href="#yang" y="-3"/></g>
-                 <g transform="rotate(180) translate(0, -39.5)"><use href="#yin" y="3"/><use href="#yin" y="0"/><use href="#yin" y="-3"/></g>
-                 <g transform="rotate(225) translate(0, -39.5)"><use href="#yang" y="3"/><use href="#yin" y="0"/><use href="#yin" y="-3"/></g>
-                 <g transform="rotate(270) translate(0, -39.5)"><use href="#yang" y="3"/><use href="#yin" y="0"/><use href="#yang" y="-3"/></g>
-                 <g transform="rotate(315) translate(0, -39.5)"><use href="#yang" y="3"/><use href="#yang" y="0"/><use href="#yin" y="-3"/></g>
+                 <g transform="translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
+                 <g transform="rotate(45) translate(0, -39.5)"><use href="#yin-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
+                 <g transform="rotate(90) translate(0, -39.5)"><use href="#yin-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
+                 <g transform="rotate(135) translate(0, -39.5)"><use href="#yin-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
+                 <g transform="rotate(180) translate(0, -39.5)"><use href="#yin-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
+                 <g transform="rotate(225) translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
+                 <g transform="rotate(270) translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
+                 <g transform="rotate(315) translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
             </g>
         </svg>
     </div>
