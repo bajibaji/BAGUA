@@ -49,7 +49,7 @@
             --gold-text-gradient: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
             
             /* 玻璃拟态 - 深色模式 (默认) */
-            --glass-bg: rgba(20, 20, 20, 0.6);
+            --glass-bg: rgba(20, 20, 20, 0.05);
             --glass-border: rgba(255, 255, 255, 0.08);
             --glass-shine: rgba(255, 255, 255, 0.03);
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -60,10 +60,10 @@
 
         /* 浅色模式变量 */
         html.light-theme {
-            --glass-bg: rgba(255, 255, 255, 0.75);
-            --glass-border: rgba(255, 255, 255, 0.6);
-            --glass-shine: rgba(255, 255, 255, 0.4);
-            --glass-shadow: 0 8px 32px rgba(100, 116, 139, 0.15);
+            --glass-bg: rgba(255, 255, 255, 0.2);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shine: rgba(255, 255, 255, 0.8);
+            --glass-shadow: 0 8px 32px rgba(100, 116, 139, 0.45);
         }
 
         body {
@@ -78,7 +78,7 @@
 
         html.light-theme body {
             background-color: var(--bg-light);
-            background-image: radial-gradient(circle at 50% 30%, #ffffff 0%, #eef2f6 100%);
+            background-image: radial-gradient(circle at 50% 30%, #ffffff 0%, #666666 100%);
             color: #2d3748;
         }
 
@@ -97,7 +97,8 @@
             filter: blur(1px);
             animation: rotateBagua 120s linear infinite;
             color: #fff;
-        }
+            --off-color: #000;
+        }--off-color: #fff; 
         html.light-theme #bg-bagua { color: #000; opacity: 0.03; }
 
         @keyframes rotateBagua {
@@ -190,12 +191,12 @@
                 <circle cx="50" cy="50" r="17"></circle><circle cx="50" cy="50" r="16"></circle>
             </g>
             <g stroke-width="0">
-                <path d="M50 16 A 34 34 0 0 0 50 84 Z" fill="var(--bg-color)"></path>
+                <path d="M50 16 A 34 34 0 0 0 50 84 Z" fill="var(--off-color)"></path>
                 <path d="M50 16 A 34 34 0 0 1 50 84 Z" fill="currentColor"></path>
                 <circle cx="50" cy="67" r="17" fill="currentColor"></circle>
-                <circle cx="50" cy="33" r="17" fill="var(--bg-color)"></circle>
+                <circle cx="50" cy="33" r="17" fill="var(--off-color)"></circle>
                 <circle cx="50" cy="33" r="4" fill="currentColor"></circle>
-                <circle cx="50" cy="67" r="4" fill="var(--bg-color)"></circle>
+                <circle cx="50" cy="67" r="4" fill="var(--off-color)"></circle>
             </g>
             <g transform="translate(50 50)">
                  <g transform="translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
@@ -239,7 +240,7 @@
                 <p class="text-gray-400 font-light tracking-widest text-xs sm:text-base opacity-80 mt-2">
                     小蚂蚁们偷偷窥探时间投影切片，可趋吉避凶。
                 </p>
-                <div class="w-20 h-[1px] bg-gradient-to-r from-transparent via-gold-500/50 to-transparent mx-auto mt-3"></div>
+                <div id="header-divider" class="w-20 h-[1px] bg-gradient-to-r from-transparent via-gold-500/50 to-transparent mx-auto mt-3"></div>
             </div>
 
             <!-- 导航网格: 移动端单列，PC端双列 -->
@@ -333,6 +334,12 @@
             y: 10,
             ease: "power2.out"
         }, "-=1.0")
+        .from('#header-divider', {
+            duration: 1.2,
+            scaleX: 0,
+            opacity: 0,
+            ease: "power2.out"
+        }, "-=0.8")
         // 卡片交错上升
         .from('.nav-card', {
             duration: 0.8,
