@@ -2,15 +2,14 @@
 <font color="gold">**发心不正者,结果絮乱不可观**</font>
 
 <font color="gold">**网页仅供参考，解卦请自行找人**</font>
-
-服务器状态： [![Netlify Status](https://api.netlify.com/api/v1/badges/1f379702-6484-4b3a-af2c-e00964033597/deploy-status)](https://app.netlify.com/projects/qigua/deploys)
+服务器状态：[![Netlify Status](https://api.netlify.com/api/v1/badges/1f379702-6484-4b3a-af2c-e00964033597/deploy-status)](https://app.netlify.com/projects/qigua/deploys)
 
 ### v0.2.1
 > 重新编写了主页的代码
-> 修复了部分页面八卦背景的阴阳图错误的问题
+> > 修复了部分页面八卦背景的阴阳图错误的问题
 ### v0.1.9
-> 优化了灵签的页面和文本,
-### v0.1.8
+> 优化了灵签的页面和文本
+> ### v0.1.8
 > 修复了灵签的算法随机性不够公平的问题
 ### v0.1.7
 > 修复了部分动画
