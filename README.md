@@ -2,6 +2,7 @@
 <font color="gold">**发心不正者,结果絮乱不可观**</font>
 
 <font color="gold">**网页仅供参考，解卦请自行找人**</font>
+
 服务器状态：[![Netlify Status](https://api.netlify.com/api/v1/badges/1f379702-6484-4b3a-af2c-e00964033597/deploy-status)](https://app.netlify.com/projects/qigua/deploys)
 
 ### v0.2.1
