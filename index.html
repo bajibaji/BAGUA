@@ -121,7 +121,14 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            text-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            /* 增强 text-shadow 以获得更强的光晕效果 */
+            text-shadow: 0 2px 8px rgba(212, 175, 55, 0.3), 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+
+        /* 为标题添加光晕动画 */
+        @keyframes title-glow {
+            0%, 100% { text-shadow: 0 2px 8px rgba(212, 175, 55, 0.3), 0 0 20px rgba(255, 215, 0, 0.2); }
+            50% { text-shadow: 0 2px 12px rgba(212, 175, 55, 0.5), 0 0 30px rgba(255, 215, 0, 0.3); }
         }
 
         /* 导航卡片 */
@@ -234,7 +241,7 @@
             
             <!-- 标题区 -->
             <div class="text-center mb-2" id="header-section">
-                <h1 class="text-4xl sm:text-6xl font-bold tracking-[0.2em] mb-4 text-gold-gradient leading-none inline-block relative">
+                <h1 class="text-4xl sm:text-6xl font-bold tracking-[0.2em] mb-4 text-gold-gradient inline-block relative pb-1" style="animation: title-glow 4s ease-in-out infinite;">
                     大道传真机
                 </h1>
                 <p class="text-gray-400 font-light tracking-widest text-xs sm:text-base opacity-80 mt-2">
