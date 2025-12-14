@@ -658,10 +658,7 @@
             const traditionalLineHTML = needsTraditionalLine ? `<div class="result-line flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6"><strong class="text-gold-500 whitespace-nowrap shrink-0">计算汉字:</strong><div class="result-grid flex gap-4">${traditionalCharsHTML}</div></div>` : '';
 
             resultDetails.innerHTML = `
-                <div class="result-line flex justify-center gap-4 mb-6">${inputCharsHTML}</div>
-                ${traditionalLineHTML}
-                <div class="result-line result-line-strokes flex justify-center gap-4 mb-6">${strokesHTML}</div>
-                <div class="result-line calculation-line text-base opacity-90 mt-4 p-4 bg-white/5 rounded-xl"><strong class="text-gold-500">计算过程:</strong> (${s1}×100) + (${s2}×10) + ${s3} = ${totalValue}</div>
+                <div class="result-line calculation-line text-base opacity-90 mt-1 p-2 bg-white/5 rounded-xl"><strong class="text-gold-500">计算过程:</strong> (${s1}×100) + (${s2}×10) + ${s3} = ${totalValue}</div>
                 <div id="final-result-line" class="mt-8 pt-8 border-t border-white/10 text-center">${finalResultHTML}</div>
             `;
             
