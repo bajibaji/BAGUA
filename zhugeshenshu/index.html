@@ -525,7 +525,7 @@
                 }
             } catch (e) { console.error(`读取 ${cacheKey} 缓存失败:`, e); }
 
-            const data = await fetchWithProgress('./384.JSON', (progress) => {
+            const data = await fetchWithProgress('./384.json', (progress) => {
                 progressState.qianShi = progress;
                 updateProgressUI();
             });
