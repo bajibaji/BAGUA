@@ -4,7 +4,9 @@
 <font color="gold">**网页仅供参考，解卦请自行找人**</font>
 
 服务器状态：[![Netlify Status](https://api.netlify.com/api/v1/badges/1f379702-6484-4b3a-af2c-e00964033597/deploy-status)](https://app.netlify.com/projects/qigua/deploys)
-
+### v0.2.2
+> 修復了八卦背景的問題
+> 重寫了諸葛神數的界面
 ### v0.2.1
 > 重新编写了主页的代码
 > > 修复了部分页面八卦背景的阴阳图错误的问题

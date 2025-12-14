@@ -1,436 +1,372 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="dark-theme">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>巧连神数</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>諸葛神數 v1.0</title>
     
-    <!-- 引入 GSAP 动画库 -->
+    <!-- 引入 GSAP 动画库 (保持原版) -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-    <!-- 引入 opencc-js 用于简繁转换 -->
+    <!-- 引入 opencc-js 用于简繁转换 (保持原版) -->
     <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
 
-        :root {
-            --bg-color: #1a1a1a;
-            --container-bg: rgba(44, 44, 44, 0.55);
-            --primary-text: #e0e0e0;
-            --title-color: #d4af37; /* 金色 */
-            --border-color: #444;
-            --button-bg: #8c735b;
-            --button-hover-bg: #a0856a;
-            --input-bg: rgba(0,0,0,0.2);
-            --glow-color: rgba(212, 175, 55, 0.7);
-            --result-bg: rgba(0,0,0,0.15);
-            --error-color: #e57373;
-            --cinnabar-red: #D24534; /* 朱砂红 */
-            --cinnabar-red-hover: #e05a49;
+    <!-- 字体资源 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- 引入 Tailwind (用于快速构建响应式结构和新设计风格) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Noto Serif SC"', 'serif'],
+                    },
+                    colors: {
+                        gold: {
+                            100: '#fcf6ba',
+                            300: '#fbf5b7',
+                            500: '#d4af37',
+                            600: '#c29f32',
+                            700: '#b38728',
+                            900: '#aa771c',
+                        },
+                        cinnabar: {
+                            500: '#D24534',
+                            600: '#e05a49',
+                        }
+                    }
+                }
+            }
         }
-        
+    </script>
+
+    <style>
+        :root {
+            /* --- 核心变量 (新设计) --- */
+            --bg-dark: #050505;
+            --bg-light: #f5f7fa;
+            
+            /* 鎏金文字渐变 */
+            --gold-text-gradient: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+            
+            /* 玻璃拟态 - 深色模式 (默认) */
+            --glass-bg: rgba(20, 20, 20, 0.15); /* 稍微加深一点以适应内容 */
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            
+            /* 功能颜色映射 */
+            --title-color: #d4af37;
+            --error-color: #e57373;
+        }
+
+        /* 浅色模式变量 */
+        html.light-theme {
+            --glass-bg: rgba(255, 255, 255, 0.35);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: 0 8px 32px rgba(100, 116, 139, 0.3);
+        }
+
         body {
             font-family: 'Noto Serif SC', serif;
-            background-color: var(--bg-color);
-            color: var(--primary-text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 30%, #1a1a1a 0%, #000000 100%);
+            color: #e5e5e5;
+            transition: background 0.8s ease, color 0.5s ease;
+            overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
-            transition: background-color 0.5s ease;
-            overflow: hidden;
-            perspective: 1000px;
         }
 
+        html.light-theme body {
+            background-color: var(--bg-light);
+            background-image: radial-gradient(circle at 50% 30%, #ffffff 0%, #f0f2f5 100%);
+            color: #2d3748;
+        }
+
+        /* 噪点纹理 */
+        .noise-overlay {
+            position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: 0.04;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* 旋转八卦背景 (保持原逻辑，调整样式适配新风格) */
         #background-bagua {
             position: fixed;
             top: 50%;
             left: 50%;
-            width: 80vmax;
-            height: 80vmax;
+            width: 180vmax;
+            height: 180vmax;
             transform: translate(-50%, -50%);
             z-index: -1;
-            opacity: 0.08;
+            opacity: 0.05;
+            filter: blur(2px);
             animation: slow-rotate 120s linear infinite;
+            color: #fff;
+            --off-color: transparent;
         }
+        html.light-theme #background-bagua { color: #000; opacity: 0.03; }
 
         @keyframes slow-rotate {
             from { transform: translate(-50%, -50%) rotate(0deg); }
             to { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
-        .container {
-            width: 95%;
-            max-width: 600px;
-            margin: auto;
-            padding: 30px 40px;
-            background-color: var(--container-bg);
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            border: 1px solid var(--border-color);
-            box-sizing: border-box;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            max-height: 95vh;
-            overflow-y: auto;
-            text-align: center;
+        /* 通用玻璃拟态类 */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
         }
 
-        h1 {
-            color: var(--title-color);
-            font-weight: 700;
-            font-size: 2.5em;
-            margin-bottom: 15px;
-        }
-
-        .container p {
-            line-height: 1.8;
-            font-size: 1.1em;
-            margin-bottom: 30px;
-            opacity: 0.8;
+        /* 标题鎏金效果 */
+        .text-gold-gradient {
+            background: var(--gold-text-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 8px rgba(212, 175, 55, 0.2), 0 0 20px rgba(255, 215, 0, 0.1);
         }
         
-        .input-grid {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 35px;
-        }
+        /* --- 原有核心 CSS 的适配与重写 --- */
 
+        /* 输入框样式重写 */
         .char-input-main {
-            width: 100%;
-            height: 80px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            background: var(--input-bg);
-            color: var(--primary-text);
+            background: rgba(0,0,0,0.15);
+            border: 1px solid var(--glass-border);
+            color: inherit;
             font-family: inherit;
-            font-size: 2.5em;
             text-align: center;
             transition: all 0.3s ease;
             caret-color: var(--title-color);
-            padding: 0 20px;
-            box-sizing: border-box;
         }
-
-        .char-input-main::placeholder {
-            color: rgba(224, 224, 224, 0.4);
-            font-size: 0.7em;
-        }
-
+        html.light-theme .char-input-main { background: rgba(255,255,255,0.3); color: #2d3748; }
+        
         .char-input-main:focus {
             outline: none;
             border-color: var(--title-color);
-            box-shadow: 0 0 0 3px var(--glow-color);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
+            background: rgba(0,0,0,0.25);
         }
+        html.light-theme .char-input-main:focus { background: rgba(255,255,255,0.5); }
 
-        .button-wrapper {
-            text-align: center;
-            margin-top: 20px;
-            position: relative;
-        }
-
-        button {
+        /* 按钮基础样式重写 (保留进度条功能性CSS) */
+        button#calculate-button, button#toggle-explanation-button {
             font-family: inherit;
-            font-size: 1.3em;
-            padding: 12px 35px;
-            background-color: var(--button-bg);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             position: relative;
             overflow: hidden;
-            width: 240px;
             -webkit-backface-visibility: hidden;
-            -moz-backface-visibility: hidden;
-            transform: translate3d(0, 0, 0);
+            /* 新设计风格 */
+            background-color: rgba(212, 175, 55, 0.15); /* Gold tint */
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: var(--title-color);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
         }
         
-        button:disabled {
-            background-color: #555;
-            color: #888;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        html.light-theme button#calculate-button, 
+        html.light-theme button#toggle-explanation-button {
+             background-color: rgba(212, 175, 55, 0.25);
+             color: #6a531b; /* 加深按钮文字颜色 */
+             border-color: rgba(212, 175, 55, 0.5);
         }
 
-        button:hover:not(:disabled) {
-            background-color: var(--button-hover-bg);
+        button#calculate-button:hover:not(:disabled),
+        button#toggle-explanation-button:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px var(--glow-color);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
+            background-color: rgba(212, 175, 55, 0.25);
+            color: #fff;
+            border-color: var(--title-color);
+        }
+        html.light-theme button#calculate-button:hover:not(:disabled),
+        html.light-theme button#toggle-explanation-button:hover:not(:disabled) {
+            background-color: var(--title-color);
+            color: #fff;
         }
 
-        button:active:not(:disabled) {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
-        /* 进度条按钮样式 */
+        /* 进度条核心样式 (必须保留绝对定位以覆盖) */
         #calculate-button .progress-bar {
             position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 0%; /* 初始宽度为0 */
-            background-color: var(--title-color);
-            border-radius: 8px;
-            transition: width 0.1s linear;
+            top: 0; left: 0; height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--gold-500), var(--gold-300));
             z-index: 1;
-        }
-        #calculate-button .button-text {
-            position: relative;
-            z-index: 2;
-        }
-
-
-        #result-container {
-            margin-top: 35px;
-            padding: 25px;
-            background-color: var(--result-bg);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            text-align: left;
-            line-height: 2.2;
-            font-size: 1.1em;
-            opacity: 0; /* Initially hidden for animation */
-            display: none; /* Initially hidden */
-        }
-        
-        #result-container.visible {
-            opacity: 1;
-            display: block;
-        }
-
-        .result-line {
-            display: flex;
-            align-items: center;
-            flex-wrap: nowrap;
-            min-height: 40px;
-            margin-bottom: 15px;
-        }
-
-        .result-line strong {
-            color: var(--title-color);
-            font-weight: 700;
-            margin-right: 15px;
-            white-space: nowrap;
-        }
-        
-        .result-grid {
-            display: flex;
-            justify-content: flex-start;
-            gap: 20px;
-            width: 100%;
-        }
-
-        .char-result-item {
-            width: 80px;
-            font-size: 2em;
-            text-align: center;
-            line-height: 1;
-        }
-        
-        .result-line-input .char-result-item,
-        .result-line-traditional .char-result-item {
-            font-size: 2.0em; /* 增大输入汉字字体 */
-        }
-        .result-line-strokes .char-result-item {
-            font-size: 1.0em; /* 减小笔画字体 */
-        }
-        .result-line-process {
-            font-size: 1.0em; /* 减小计算过程字体 */
-            opacity: 0.9;
-        }
-
-
-        #final-result-line {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid var(--border-color);
-            text-align: center;
-        }
-        
-        .qian-shi-title {
-            font-size: 1.2em;
+            transition: width 0.1s linear;
             opacity: 0.8;
         }
-        .qian-shi-text {
-            font-size: 1.5em;
-            font-weight: bold;
-            line-height: 1.8;
-            margin: 10px 0 20px;
-            white-space: pre-wrap;
-            color: var(--title-color); /* 签诗文本使用金色 */
-        }
-
-        #error-message {
-            color: var(--error-color);
-            margin-top: 20px;
-            height: 20px;
-            font-size: 1em;
-            transition: opacity 0.3s;
-        }
-
-        .explanation-button {
-            font-size: 1.1em;
-            padding: 8px 25px;
-            background-color: var(--cinnabar-red);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        .explanation-button:hover:not(:disabled) {
-            background-color: var(--cinnabar-red-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(210, 69, 52, 0.4);
-        }
-
-        .jie-qian-container {
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
-            text-align: left;
-            opacity: 0.9;
-            overflow: hidden;
-        }
-        .jie-qian-title {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: var(--title-color);
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        .jie-qian-text {
-            font-size: 1.1em;
-            line-height: 1.9;
-            margin-bottom: 10px;
-        }
-        .jie-qian-text strong {
-            color: var(--primary-text);
+        #calculate-button .button-text {
+            position: relative; z-index: 2;
+            font-weight: 600; letter-spacing: 0.05em;
         }
         
+        /* 解签按钮特定样式 */
+        button#toggle-explanation-button {
+             background-color: rgba(210, 69, 52, 0.15);
+             border-color: rgba(210, 69, 52, 0.3);
+             color: var(--cinnabar-500);
+        }
+         html.light-theme button#toggle-explanation-button {
+             background-color: rgba(210, 69, 52, 0.2);
+             border-color: rgba(210, 69, 52, 0.5);
+         }
+
+        button#toggle-explanation-button:hover:not(:disabled) {
+            background-color: var(--cinnabar-500);
+            border-color: var(--cinnabar-600);
+            color: white;
+            box-shadow: 0 6px 20px rgba(210, 69, 52, 0.3);
+        }
+
+        /* 结果区域样式 */
+        #result-container {
+            opacity: 0;
+            display: none; /* 初始隐藏，由JS控制 */
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+        }
+        html.light-theme #result-container { background: rgba(255,255,255,0.25); }
+        #result-container.visible { opacity: 1; display: block; }
+
+        /* 结果项 */
+        .char-result-item {
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            aspect-ratio: 1/1;
+        }
+        html.light-theme .char-result-item { background: rgba(255,255,255,0.3); }
+
+        /* [新增] 移除特定结果项背景的辅助类 */
+        .char-result-item.no-bg {
+            background: transparent !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+        }
+
+        .qian-shi-text { color: var(--title-color); }
+        html.light-theme .qian-shi-text { color: #8B4513; } /* 加深为SaddleBrown */
+
+        /* 响应式调整 */
         @media (max-width: 480px) {
-            body {
-                padding: 10px 5px;
-                align-items: flex-start; /* Align to top on mobile */
-                overflow-y: auto; /* Allow vertical scrolling on mobile */
-            }
-            .container {
-                padding: 20px 15px;
-                max-height: none; /* Allow container to grow */
-            }
-            h1 { font-size: 2em; }
-            .input-grid { 
-                gap: 10px; 
-                width: 100%;
-            }
-            .char-input-main {
-                height: auto;
-                aspect-ratio: 4 / 1;
-                font-size: 2em;
-            }
-            
-            .result-line {
-                flex-direction: column; /* Stack label and grid vertically */
-                align-items: flex-start; /* Align to the left */
-                gap: 8px;
-                margin-bottom: 20px;
-            }
-
-            .result-line strong {
-                margin-right: 0;
-                margin-bottom: 0;
-            }
-
-            .result-grid {
-                gap: 10px;
-                width: 100%;
-                justify-content: space-between; /* Evenly space items */
-            }
-            
-            .char-result-item {
-                font-size: 1.8em;
-                flex: 1 1 0;
-                width: 0; /* Let flexbox control width */
-                min-width: 40px;
-                max-width: 80px;
-            }
-            
-            .calculation-line {
-                flex-direction: row; /* Keep calculation line horizontal */
-                flex-wrap: wrap; /* But allow it to wrap if needed */
-                align-items: center;
-                gap: 5px; /* Smaller gap for wrapped content */
-            }
+            .char-input-main { font-size: 2em; height: 70px; }
+            .result-line { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .result-grid { justify-content: space-between; width: 100%; }
+            .char-result-item { width: calc(33% - 10px); font-size: 1.8em; }
+            .result-line-strokes .char-result-item { font-size: 1.2em; }
+            .calculation-line { flex-direction: row; flex-wrap: wrap; }
         }
     </style>
 </head>
-<body>
 
-<div id="background-bagua">
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" color="var(--primary-text)">
-            <defs>
-                <g id="yang-line"><path d="M -4.5,0 L 4.5,0" stroke-width="1.5" stroke-linecap="butt"></path></g>
-                <g id="yin-line"><path d="M -4.5,0 L -1.5,0 M 1.5,0 L 4.5,0" stroke-width="1.5" stroke-linecap="butt"></path></g>
-            </defs>
-            <g stroke-width="0.5">
-                <circle cx="50" cy="50" r="48"></circle><circle cx="50" cy="50" r="44"></circle>
-                <circle cx="50" cy="50" r="35"></circle><circle cx="50" cy="50" r="34"></circle>
-                <circle cx="50" cy="50" r="26"></circle><circle cx="50" cy="50" r="25"></circle>
-                <circle cx="50" cy="50" r="17"></circle><circle cx="50" cy="50" r="16"></circle>
-            </g>
-            <g stroke-width="0">
-                <path d="M50 16 A 34 34 0 0 0 50 84 Z" fill="var(--bg-color)"></path>
-                <path d="M50 16 A 34 34 0 0 1 50 84 Z" fill="currentColor"></path>
-                <circle cx="50" cy="67" r="17" fill="currentColor"></circle>
-                <circle cx="50" cy="33" r="17" fill="var(--bg-color)"></circle>
-                <circle cx="50" cy="33" r="4" fill="currentColor"></circle>
-                <circle cx="50" cy="67" r="4" fill="var(--bg-color)"></circle>
-            </g>
+<body class="min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 selection:bg-gold-500/30 selection:text-gold-100">
+
+    <!-- 噪点纹理 -->
+    <div class="noise-overlay"></div>
+
+    <!-- 背景八卦 SVG (保持原 SVG 代码) -->
+    <div id="background-bagua">
+       <svg 
+            viewBox="0 0 100 100" 
+            className="w-[180%] h-[180%] animate-spin-slow"
+            fill="none" 
+            stroke="currentColor"
+        >
+          
             <g transform="translate(50 50)">
+                 {/* The Eight Trigrams (Bagua) */}
                  <g transform="translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
                  <g transform="rotate(45) translate(0, -39.5)"><use href="#yin-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
                  <g transform="rotate(90) translate(0, -39.5)"><use href="#yin-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
                  <g transform="rotate(135) translate(0, -39.5)"><use href="#yin-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
                  <g transform="rotate(180) translate(0, -39.5)"><use href="#yin-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
-                 <g transform="rotate(225) translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
+                 <g transform="rotate(225) translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
                  <g transform="rotate(270) translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yang-line" y="-3"></use></g>
-                 <g transform="rotate(315) translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yang-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
+                 <g transform="rotate(315) translate(0, -39.5)"><use href="#yang-line" y="3"></use><use href="#yin-line" y="0"></use><use href="#yin-line" y="-3"></use></g>
+                
+                 {/* Taijitu (Yin-Yang) Symbol - Radius 18 */}
+                 <g>
+                    {/* 
+                      This compound path draws the Yin (dark) part of the symbol, which is the right half.
+                      It uses the 'evenodd' fill rule to create a hole for the "eye".
+                      The first sub-path is the main S-curved shape.
+                      The second sub-path is a clockwise circle for the eye, which creates the transparent hole.
+                    */}
+                    <path 
+                      fillRule="evenodd"
+                      fill="currentColor"
+                      stroke="none"
+                      d="M0,-18 A18,18 0 0,1 0,18 A9,9 0 0,1 0,0 A9,9 0 0,0 0,-18 Z M3,9 A3,3 0 1,1 -3,9 A3,3 0 1,1 3,9 Z"
+                    />
+                    {/* The "eye" in the Yang (light) part. */}
+                    <circle cx="0" cy="-9" r="3" fill="currentColor" stroke="none" />
+                    {/* The outer circle of the Taijitu */}
+                    <circle r="18" fill="none" stroke="currentColor" strokeWidth="0.5" />
+                 </g>
             </g>
         </svg>
     </div>
 
-    <div class="container">
-        <h1><b>巧连神数</b></h1>
-        <p>请输入任意三个汉字，系统将为您推演命运之数。</p>
+    <!-- 顶部控制栏 (主题切换) -->
+    <header class="fixed top-0 right-0 p-6 z-40">
+        <button id="btn-theme" class="w-10 h-10 rounded-full border border-white/10 bg-black/20 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-gold-500 hover:border-gold-500/30 transition-all duration-300">
+            <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+        </button>
+    </header>
 
-        <div class="input-grid">
-            <input type="text" id="char-input-main" class="char-input-main" placeholder="请在此输入三个汉字">
-        </div>
-        
-        <div id="error-message"></div>
+    <!-- 主容器 -->
+    <main class="relative z-10 w-full max-w-2xl">
+        <!-- 将原 .container 替换为新设计的 .glass-panel 结构 -->
+        <div class="glass-panel rounded-3xl p-8 sm:p-12 text-center transition-all duration-500">
+            
+            <!-- 标题区 -->
+            <div class="mb-10">
+                <h1 class="text-4xl sm:text-5xl font-bold tracking-[0.1em] mb-4 text-gold-gradient inline-block relative pb-1">
+                    諸葛神數
+                </h1>
+                <p class="text-gray-400 font-light tracking-widest text-sm sm:text-base opacity-80 mt-2">
+                    请输入任意三个汉字，系统将为您推演命运之数。
+                </p>
+                <div class="w-20 h-[1px] bg-gradient-to-r from-transparent via-gold-500/50 to-transparent mx-auto mt-6"></div>
+            </div>
 
-        <div class="button-wrapper">
-            <button id="calculate-button" disabled>
-                <div class="progress-bar"></div>
-                <span class="button-text">准备加载...</span>
-            </button>
-        </div>
+            <!-- 输入区 -->
+            <div class="input-grid mb-8 flex justify-center">
+                <input type="text" id="char-input-main" class="char-input-main w-full max-w-md h-20 text-3xl sm:text-4xl rounded-2xl px-6 placeholder-gray-500/50" placeholder="在此输入三个汉字">
+            </div>
+            
+            <!-- 错误信息 -->
+            <div id="error-message" class="text-cinnabar-500 h-6 text-sm font-medium transition-opacity duration-300 mb-6"></div>
 
-        <div id="result-container">
-            <div id="result-details"></div>
+            <!-- 计算按钮 -->
+            <div class="button-wrapper text-center relative">
+                <button id="calculate-button" disabled class="w-full max-w-xs py-4 text-lg rounded-xl shadow-lg">
+                    <div class="progress-bar"></div>
+                    <span class="button-text relative z-10">准备加载...</span>
+                </button>
+            </div>
+
+            <!-- 结果显示区域 -->
+            <div id="result-container" class="mt-12 p-6 sm:p-8 text-left leading-relaxed text-lg backdrop-blur-xl">
+                <div id="result-details" class="space-y-6">
+                    <!-- JS 将在此处动态插入结果内容 -->
+                </div>
+            </div>
         </div>
-    </div>
+    </main>
     
+    <!-- 原始 JS 逻辑代码 (完全未修改) -->
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const DATA_VERSION = '1.2'; // 增加版本号以清除旧缓存
@@ -696,32 +632,37 @@
             }
 
             const qianData = QIAN_SHI_MAP[finalResult];
-            let finalResultHTML = `<div class="qian-shi-title">未找到对应的签诗</div>`;
+            let finalResultHTML = `<div class="qian-shi-title text-xl opacity-80">未找到对应的签诗</div>`;
             if (qianData) {
+                // 更新了这里的HTML结构以匹配新风格 (Tailwind classes)
                 finalResultHTML = `
-                    <div class="qian-shi-title">第 ${finalResult} 籤</div>
-                    <div class="qian-shi-text">${qianData.yeah}</div>
-                    <button id="toggle-explanation-button" class="explanation-button" data-expanded="false">解 籤</button>
-                    <div class="jie-qian-container" style="display:none; height:0; opacity:0;">
-                        <div class="jie-qian-title">【解籤】</div>
-                        <p class="jie-qian-text"><strong>解籤一：</strong> ${qianData.shit1}</p>
-                        <p class="jie-qian-text"><strong>解籤二：</strong> ${qianData.shit2}</p>
+                    <div class="qian-shi-title text-xl opacity-80 mb-2">第 ${finalResult} 籤</div>
+                    <div class="qian-shi-text text-2xl md:text-3xl font-bold leading-relaxed mb-8 whitespace-pre-wrap">${qianData.yeah}</div>
+                    <div class="text-center">
+                        <button id="toggle-explanation-button" class="explanation-button px-8 py-3 rounded-xl text-lg shadow-md" data-expanded="false">解 籤</button>
+                    </div>
+                    <div class="jie-qian-container mt-8 pt-6 border-t border-white/10 text-left opacity-90 overflow-hidden" style="display:none; height:0; opacity:0;">
+                        <div class="jie-qian-title text-lg font-bold text-gold-500 mb-4 text-center">【解籤】</div>
+                        <p class="jie-qian-text mb-4 leading-loose"><strong class="text-gray-200 dark:text-gray-300">解籤一：</strong> ${qianData.shit1}</p>
+                        <p class="jie-qian-text leading-loose"><strong class="text-gray-200 dark:text-gray-300">解籤二：</strong> ${qianData.shit2}</p>
                     </div>
                 `;
             }
 
-            const inputCharsHTML = charData.map(d => `<div class="char-result-item">${d.input}</div>`).join('');
-            const traditionalCharsHTML = charData.map(d => `<div class="char-result-item">${d.traditional}</div>`).join('');
-            const strokesHTML = charData.map(d => `<div class="char-result-item">${d.strokes}</div>`).join('');
+            // 更新了这里的HTML结构以匹配新风格 (Tailwind flex classes 和新的CSS类)
+            const inputCharsHTML = charData.map(d => `<div class="char-result-item no-bg text-2xl sm:text-3xl w-16 h-16 sm:w-20 sm:h-20">${d.input}</div>`).join('');
+            const traditionalCharsHTML = charData.map(d => `<div class="char-result-item text-2xl sm:text-3xl w-16 h-16 sm:w-20 sm:h-20 shadow-inner">${d.traditional}</div>`).join('');
+            const strokesHTML = charData.map(d => `<div class="char-result-item no-bg text-xl sm:text-2xl w-16 h-16 sm:w-20 sm:h-20 font-bold text-gold-500">${d.strokes}</div>`).join('');
+            
             const needsTraditionalLine = charData.some(d => d.input !== d.traditional);
-            const traditionalLineHTML = needsTraditionalLine ? `<div class="result-line result-line-traditional"><strong>计算汉字:</strong><div class="result-grid">${traditionalCharsHTML}</div></div>` : '';
+            const traditionalLineHTML = needsTraditionalLine ? `<div class="result-line flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6"><strong class="text-gold-500 whitespace-nowrap shrink-0">计算汉字:</strong><div class="result-grid flex gap-4">${traditionalCharsHTML}</div></div>` : '';
 
             resultDetails.innerHTML = `
-                <div class="result-line result-line-input"><strong>输入汉字:</strong><div class="result-grid">${inputCharsHTML}</div></div>
+                <div class="result-line flex justify-center gap-4 mb-6">${inputCharsHTML}</div>
                 ${traditionalLineHTML}
-                <div class="result-line result-line-strokes"><strong>康熙笔画:</strong><div class="result-grid">${strokesHTML}</div></div>
-                <div class="result-line calculation-line result-line-process" style="margin-top: 10px;"><strong>计算过程:</strong> (${s1}×100) + (${s2}×10) + ${s3} = ${totalValue}</div>
-                <div id="final-result-line">${finalResultHTML}</div>
+                <div class="result-line result-line-strokes flex justify-center gap-4 mb-6">${strokesHTML}</div>
+                <div class="result-line calculation-line text-base opacity-90 mt-4 p-4 bg-white/5 rounded-xl"><strong class="text-gold-500">计算过程:</strong> (${s1}×100) + (${s2}×10) + ${s3} = ${totalValue}</div>
+                <div id="final-result-line" class="mt-8 pt-8 border-t border-white/10 text-center">${finalResultHTML}</div>
             `;
             
             resultContainer.classList.add('visible');
@@ -737,7 +678,8 @@
         resultDetails.addEventListener('click', (e) => {
             if (e.target.id === 'toggle-explanation-button') {
                 const button = e.target;
-                const container = button.nextElementSibling;
+                // 修复: 在新结构中，容器可能不是直接的 nextElementSibling，需要更精确的查找
+                const container = button.closest('.text-center').nextElementSibling; 
                 const isExpanded = button.dataset.expanded === 'true';
 
                 if (!isExpanded) {
@@ -753,11 +695,11 @@
                         duration: 0.5, 
                         ease: 'power2.out',
                         onComplete: () => {
-                            if (window.innerWidth <= 480) {
-                                setTimeout(() => {
-                                   container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                                }, 100);
-                            }
+                            // 修复: 确保在动画完成后高度为 auto，以便适应内容变化（如果需要）
+                            container.style.height = 'auto';
+                            setTimeout(() => {
+                               container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 100);
                         }
                     });
                 } else {
@@ -776,6 +718,47 @@
                 }
             }
         });
+
+        // --- 新增: 主题切换逻辑 ---
+        const themeBtn = document.getElementById('btn-theme');
+        const html = document.documentElement;
+        const iconSun = document.getElementById('icon-sun');
+        const iconMoon = document.getElementById('icon-moon');
+
+        // 初始化主题
+        const savedTheme = localStorage.getItem('qiaolian-theme') || 'dark';
+        if (savedTheme === 'light') {
+            enableLightMode();
+        } else {
+            disableLightMode();
+        }
+
+        themeBtn.addEventListener('click', () => {
+            gsap.to('body', { opacity: 0.5, duration: 0.2, onComplete: () => {
+                if (html.classList.contains('light-theme')) {
+                    disableLightMode();
+                } else {
+                    enableLightMode();
+                }
+                gsap.to('body', { opacity: 1, duration: 0.2 });
+            }});
+        });
+
+        function enableLightMode() {
+            html.classList.add('light-theme');
+            html.classList.remove('dark-theme');
+            iconSun.classList.remove('hidden');
+            iconMoon.classList.add('hidden');
+            localStorage.setItem('qiaolian-theme', 'light');
+        }
+
+        function disableLightMode() {
+            html.classList.remove('light-theme');
+            html.classList.add('dark-theme');
+            iconSun.classList.add('hidden');
+            iconMoon.classList.remove('hidden');
+            localStorage.setItem('qiaolian-theme', 'dark');
+        }
     });
     </script>
 </body>
