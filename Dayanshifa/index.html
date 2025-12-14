@@ -31,6 +31,8 @@
             --stalk-color: #f0e68c; /* 蓍草颜色 */
             --modal-bg: rgba(44, 44, 44, 0.85);
             --modal-border: #555;
+            /* 鎏金文字渐变 */
+            --gold-text-gradient: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
         }
         
         /* 明亮主题 */
@@ -50,6 +52,16 @@
             --stalk-color: #d4c88c;
             --modal-bg: rgba(255, 255, 255, 0.9);
             --modal-border: #d0c8b0;
+        }
+
+        /* 鎏金文字渐变 */
+        .text-gold-gradient {
+            background: var(--gold-text-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            /* 增强 text-shadow 以获得更强的光晕效果 */
+            text-shadow: 0 2px 8px rgba(212, 175, 55, 0.3), 0 0 20px rgba(255, 215, 0, 0.2);
         }
 
         body {
@@ -83,6 +95,12 @@
         @keyframes slow-rotate {
             from { transform: translate(-50%, -50%) rotate(0deg); }
             to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* [新增] 噪点纹理 */
+        .noise-overlay {
+            position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: 0.04;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
         body.divining {
@@ -121,9 +139,9 @@
         @keyframes fadeInContainer { to { opacity: 1; } }
 
         h1, h2, h3 { color: var(--title-color); text-align: center; font-weight: 700; }
-        h1 { font-size: 2.2em; margin-bottom: -15px; }
+        h1 { font-size: 2.5em; margin-bottom: -15px; }
         h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-top: 40px; margin-bottom: 20px; }
-        .section p { text-align: center; line-height: 1.8; font-size: 1.1em; margin-bottom: 20px; }
+        .section p { text-align: center; line-height: 1.8; font-size: 0.9em; margin-bottom: 20px; }
         
         .method-selector {
             display: flex;
@@ -603,6 +621,9 @@
 </head>
 <body>
     
+    <!-- [新增] 噪点纹理 -->
+    <div class="noise-overlay"></div>
+
     <!-- 添加页面加载动画 -->
     <div id="page-loader">
         <div class="loader-content">
@@ -651,7 +672,7 @@
     
     <div class="container" id="main-container">
         <div id="intro-section">
-            <h1><b>大衍筮法 · 在线卜卦</b></h1>
+            <h1 class="text-gold-gradient">大衍筮法 · 在线卜卦</h1>
             <div class="section">
                 <p><i>心诚则灵，一事一问</i></p>
             </div>
@@ -1427,14 +1448,6 @@
                 this.state.isParallaxActive = true;
                 this.state.isCalibrated = false; 
                 this.state.isVernacular = false; // [NEW] 重置状态
-            });
-
-            // 选项卡切换 (只切换 active class，内容已由 updateModalContent 填充)
-            document.getElementById('tab-original').addEventListener('click', () => {
-                document.getElementById('tab-original').classList.add('active');
-                document.getElementById('content-original').classList.add('active');
-                document.getElementById('tab-changed').classList.remove('active');
-                document.getElementById('content-changed').classList.remove('active');
             });
             document.getElementById('tab-changed').addEventListener('click', () => {
                 document.getElementById('tab-original').classList.remove('active');
