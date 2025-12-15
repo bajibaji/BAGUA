@@ -125,24 +125,72 @@
         @keyframes fadeInContainer { to { opacity: 1; } }
 
         h1, h2, h3 { color: var(--title-color); text-align: center; font-weight: 700; }
-        h1 { font-size: 2.3em; margin-bottom: -15px; }
+        h1 { font-size: 2.5em; margin-bottom: -15px; }
         .section p { text-align: center; line-height: 1.8; font-size: 0.9em; margin-bottom: 20px; }
         
         .button-wrapper { text-align: center; margin-top: 20px; position: relative; min-height: 60px; display: flex; justify-content: center; align-items: center; gap: 15px;}
         button {
-            font-family: inherit; font-size: 1.2em; padding: 12px 25px; background-color: var(--button-bg);
-            color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-family: inherit; font-size: 1.2em; padding: 14px 32px; 
+            border: none; border-radius: 12px; cursor: pointer; transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            font-weight: 600;
         }
-        button:hover:not(:disabled) { 
-            background-color: var(--button-hover-bg); 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 20px rgba(0,0,0,0.22); 
+
+        /* 诚心抽签和查看按钮 - 高级金色风格 */
+        #draw-button, #direct-submit-button {
+            background-color: rgba(212, 175, 55, 0.15);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: var(--title-color);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            font-size: 1.3em;
+            padding: 16px 40px;
+            letter-spacing: 0.05em;
         }
-        button:active:not(:disabled) { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+        #draw-button:hover:not(:disabled), #direct-submit-button:hover:not(:disabled) { 
+            transform: translateY(-3px);
+            box-shadow: 0 8px 28px rgba(212, 175, 55, 0.35);
+            background-color: rgba(212, 175, 55, 0.28);
+            color: #fff;
+            border-color: var(--title-color);
+        }
+
+        #draw-button:active:not(:disabled), #direct-submit-button:active:not(:disabled) { 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25); 
+        }
+
+        /* 浅色主题按钮调整 */
+        :root.light-theme #draw-button,
+        :root.light-theme #direct-submit-button {
+            background-color: rgba(212, 175, 55, 0.22);
+            border-color: rgba(212, 175, 55, 0.45);
+            color: #6a531b;
+        }
+
+        :root.light-theme #draw-button:hover:not(:disabled),
+        :root.light-theme #direct-submit-button:hover:not(:disabled) {
+            background-color: var(--title-color);
+            color: #fff;
+        }
+
         button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
+
+        /* 进度条（用于按钮加载状态） */
+        button .progress-bar {
+            position: absolute;
+            top: 0; left: 0; height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--title-color), rgba(212, 175, 55, 0.6));
+            z-index: 1;
+            transition: width 0.1s linear;
+            opacity: 0.15;
+        }
+        button .button-text {
+            position: relative;
+            z-index: 2;
+        }
 
         .button-glow-effect {
             position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
@@ -555,19 +603,28 @@
 
         /* 选签界面 */
         #selection-container {
+            display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             overflow: hidden;
             box-sizing: border-box;
             padding: 20px;
+            width: 100%;
+            max-width: 100%;
         }
         #selection-prompt {
             font-size: 1.3em;
             color: var(--primary-text);
             opacity: 0.8;
-            margin: 15px 0;
+            margin: 15px auto;
             flex-shrink: 0;
-            text-align: center; /* 添加这行 */
+            text-align: center;
+            line-height: 1.4;
+            width: fit-content;
+            max-width: calc(7 * 80px + 6 * 8px + 20px);
+            white-space: normal;
+            padding: 0 10px;
         }
         #card-grid {
             display: grid;
@@ -614,7 +671,7 @@
             }
             body { align-items: center; padding: 0; }
             .container { padding: 15px; margin: 0 2.5%; width: 95%; border-radius: 8px; overflow: auto; }
-            h1 { font-size: 1.5em; }
+            h1 { font-size: 2.4em; }
             button { font-size: 1em; padding: 10px 18px; }
             #modal-content { padding: 15px; }
             .lot-title { font-size: 1.8em; }
@@ -641,7 +698,15 @@
 
                 border-radius: 4px; 
             }
-            #selection-prompt { font-size: 1.1em; }
+            #selection-prompt { 
+                font-size: 1.0em; 
+                line-height: 1.6;
+                margin: 8px auto;
+                max-width: 95vw;
+                width: 95vw;
+                padding: 0 10px;
+                white-space: normal;
+            }
         }
     </style>
 </head>
@@ -727,7 +792,10 @@
                     <input type="range" min="1" max="49" value="1" id="direct-slider">
                 </div>
                 <div class="button-wrapper" style="margin-top: 15px;">
-                    <button id="direct-submit-button" class="button-small">查看</button>
+                    <button id="direct-submit-button">
+                        <div class="progress-bar"></div>
+                        <span class="button-text">查看</span>
+                    </button>
                 </div>
             </div>
 
@@ -735,7 +803,10 @@
             <div id="interactive-method-container" class="method-container">
                 <p><i>默念所求之事，开始摇签</i></p>
                 <div class="button-wrapper" style="margin-top: 0;">
-                    <button id="draw-button">诚心抽签</button>
+                    <button id="draw-button">
+                        <div class="progress-bar"></div>
+                        <span class="button-text">诚心抽签</span>
+                    </button>
                 </div>
             </div>
         </div>
