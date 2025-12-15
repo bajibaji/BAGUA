@@ -1,0 +1,29 @@
+{
+  "name": "BAGUA",
+  "version": "0.2.2",
+  "description": "易经占卜工具 - 包含大衍筮法、诸葛神数和灵签功能",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 8080 -o",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bajibaji/BAGUA.git"
+  },
+  "keywords": [
+    "易经",
+    "占卜",
+    "八卦",
+    "I-Ching",
+    "divination"
+  ],
+  "author": "元明居士",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bajibaji/BAGUA/issues"
+  },
+  "homepage": "https://github.com/bajibaji/BAGUA#readme",
+  "devDependencies": {},
+  "dependencies": {}
+}
