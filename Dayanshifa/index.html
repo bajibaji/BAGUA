@@ -139,7 +139,7 @@
         @keyframes fadeInContainer { to { opacity: 1; } }
 
         h1, h2, h3 { color: var(--title-color); text-align: center; font-weight: 700; }
-        h1 { font-size: 2.5em; margin-bottom: -15px; }
+        h1 { font-size: 2.7em; margin-bottom: -15px; }
         h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-top: 40px; margin-bottom: 20px; }
         .section p { text-align: center; line-height: 1.8; font-size: 0.9em; margin-bottom: 20px; }
         
@@ -194,29 +194,184 @@
         }
         #label-yarrow { opacity: 1; }
 
-        .button-wrapper { text-align: center; margin-top: 20px; position: relative; min-height: 60px; display: flex; justify-content: center; align-items: center; gap: 15px;}
+        .button-wrapper { text-align: center; margin-top: 20px; position: relative; min-height: 50px; display: flex; justify-content: center; align-items: center; gap: 12px;}
+        /* --- [REVISED] 统一按钮体系：更克制、更有质感 --- */
         button {
-            font-family: inherit; font-size: 1.2em; padding: 12px 25px; background-color: var(--button-bg);
-            color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            --btn-bg: var(--button-bg);
+            --btn-bg-hover: var(--button-hover-bg);
+            --btn-text: var(--primary-text);
+            --btn-border: color-mix(in srgb, var(--border-color) 70%, transparent);
+
+            font-family: inherit;
+            font-size: 1.1em;
+            padding: 12px 22px;
+            border-radius: 12px;
+            border: 1px solid var(--btn-border);
+            color: var(--btn-text);
+            cursor: pointer;
             position: relative;
             overflow: hidden;
+
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.12), rgba(0,0,0,0.18)),
+                linear-gradient(135deg, color-mix(in srgb, var(--btn-bg) 78%, var(--title-color)), var(--btn-bg));
+
+            box-shadow:
+                0 8px 22px rgba(0,0,0,0.28),
+                inset 0 1px 0 rgba(255,255,255,0.10);
+
+            transition:
+                transform 0.18s ease,
+                box-shadow 0.22s ease,
+                background 0.22s ease,
+                border-color 0.22s ease,
+                opacity 0.22s ease;
+
+            -webkit-tap-highlight-color: transparent;
         }
-        button:hover:not(:disabled) { 
-            background-color: var(--button-hover-bg); 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 20px var(--glow-color); 
+
+        /* 「开始卜卦」按钮升级：致敬鎏金卦盘的视觉语汇 */
+        #divine-button {
+            --btn-bg: color-mix(in srgb, var(--title-color) 78%, #3a2a0d 22%);
+            --btn-bg-hover: color-mix(in srgb, var(--title-color) 90%, #483517 10%);
+            --btn-text: #fff9e6;
+
+            /* 缩小尺寸以减少视觉重量 */
+            font-size: clamp(1rem, 0.95rem + 0.4vw, 1.15rem);
+            padding: 10px 28px;
+            letter-spacing: 0.14em;
+            font-weight: 700;
+            border-radius: 12px;
+            border: 1px solid color-mix(in srgb, var(--title-color) 72%, transparent);
+            box-shadow:
+                0 10px 24px rgba(0,0,0,0.40),
+                0 0 0 1px rgba(255,255,255,0.06),
+                inset 0 1px 2px rgba(255,255,255,0.28);
+            z-index: 0;
         }
-        button:active:not(:disabled) { transform: translateY(0); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        button:disabled { background-color: #555; color: #888; cursor: not-allowed; }
+
+        #divine-button::after {
+            content: "";
+            position: absolute;
+            inset: -8px;
+            border-radius: 20px;
+            background: transparent; /* 禁用金色径向光晕 */
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* 去掉 hover 时的金色光晕，保持轻微升起效果（更小） */
+        #divine-button:hover:not(:disabled) {
+            letter-spacing: 0.16em;
+            transform: translateY(-2px);
+            border-color: color-mix(in srgb, var(--title-color) 85%, transparent);
+            box-shadow:
+                0 12px 28px rgba(0,0,0,0.44),
+                0 0 0 1px rgba(255,255,255,0.08);
+        }
+
+        /* 确保 ::after 不会显现 */
+        #divine-button:hover:not(:disabled)::after { opacity: 0; }
+
+        #divine-button:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow:
+                0 8px 18px rgba(0,0,0,0.40),
+                inset 0 3px 8px rgba(0,0,0,0.32);
+            letter-spacing: 0.12em;
+        }
+
+        /* 保留可访问的 focus，但移除金色 glow */
+        #divine-button:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--title-color) 20%, transparent), 0 12px 28px rgba(0,0,0,0.28);
+        }
+
+        #divine-button:disabled {
+            --btn-text: color-mix(in srgb, #c9b89a 70%, #6b5a35);
+            border-color: color-mix(in srgb, var(--title-color) 20%, transparent);
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0.18)),
+                linear-gradient(135deg, color-mix(in srgb, var(--btn-bg) 55%, #2c1f08 45%), color-mix(in srgb, var(--btn-bg) 35%, #140d03));
+            opacity: 0.65;
+            box-shadow: none;
+        }
+
+        :root.light-theme #divine-button {
+            --btn-text: #3d2b0c;
+            --btn-bg: color-mix(in srgb, var(--title-color) 55%, #f6ead1 45%);
+            --btn-bg-hover: color-mix(in srgb, var(--title-color) 70%, #f4e2b7 30%);
+            box-shadow:
+                0 12px 26px rgba(179,155,111,0.35),
+                inset 0 1px 1px rgba(255,255,255,0.45);
+        }
+
+        :root.light-theme #divine-button::after {
+            background: radial-gradient(circle at center, rgba(179,155,111,0.32) 0%, rgba(179,155,111,0.06) 55%, transparent 75%);
+        }
+
+        /* 顶部高光“丝绸感” */
+        button::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.22) 35%, transparent 70%);
+            transform: translateX(-35%);
+            opacity: 0;
+            transition: transform 0.35s ease, opacity 0.25s ease;
+            pointer-events: none;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            border-color: color-mix(in srgb, var(--title-color) 55%, var(--border-color));
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.14), rgba(0,0,0,0.15)),
+                linear-gradient(135deg, color-mix(in srgb, var(--btn-bg-hover) 78%, var(--title-color)), var(--btn-bg-hover));
+            box-shadow:
+                0 14px 34px rgba(0,0,0,0.35),
+                0 0 0 1px rgba(255,255,255,0.06),
+                0 10px 22px rgba(0,0,0,0.28);
+        }
+
+        button:hover:not(:disabled)::before {
+            transform: translateX(35%);
+            opacity: 0.9;
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow:
+                0 8px 18px rgba(0,0,0,0.30),
+                inset 0 2px 10px rgba(0,0,0,0.20);
+        }
+
+        button:focus-visible {
+            outline: none;
+            box-shadow:
+                0 0 0 3px color-mix(in srgb, var(--border-color) 45%, transparent),
+                0 12px 30px rgba(0,0,0,0.32);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+            transform: none;
+            box-shadow: none;
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.22)),
+                linear-gradient(135deg, color-mix(in srgb, var(--button-bg) 55%, var(--bg-color)), var(--bg-color));
+        }
 
         /* --- 单独设置卦象解释按钮颜色 --- */
         #interp-button {
-            background-color: #c93756; /* 朱红色 */
+            --btn-bg: #c93756; /* 保持原色，但纳入统一按钮体系 */
+            --btn-bg-hover: #e04a69;
+            border-color: color-mix(in srgb, #c93756 55%, var(--border-color));
         }
-        #interp-button:hover:not(:disabled) {
-            background-color: #e04a69; /* 悬停时更亮的朱红色 */
-        }
+        #interp-button:hover:not(:disabled) { border-color: color-mix(in srgb, #e04a69 60%, var(--border-color)); }
 
         .button-glow-effect {
             position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
@@ -257,7 +412,7 @@
             font-size: 4rem;
             color: var(--title-color);
             animation: float 2s ease-in-out infinite, rotate 6s linear infinite;
-            text-shadow: 0 0 15px var(--glow-color);
+            text-shadow: 0 0 8px color-mix(in srgb, var(--border-color) 30%, transparent);
         }
         .loader-text {
             color: var(--primary-text);
@@ -281,7 +436,7 @@
             opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
         }
         #interactive-animation-container.visible { opacity: 1; pointer-events: all; }
-        #interaction-prompt { color: var(--title-color); font-size: 1.5em; margin-bottom: 20px; text-shadow: 0 0 10px var(--glow-color); min-height: 1.5em;}
+        #interaction-prompt { color: var(--title-color); font-size: 1.5em; margin-bottom: 20px; text-shadow: 0 0 8px color-mix(in srgb, var(--border-color) 28%, transparent); min-height: 1.5em;}
         #stalks-wrapper {
             width: 80%; max-width: 500px; height: 150px;
             display: flex; justify-content: center; align-items: center;
@@ -408,7 +563,7 @@
         #question-input:focus {
             outline: none;
             border-color: var(--title-color);
-            box-shadow: 0 0 0 2px var(--glow-color);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--border-color) 45%, transparent);
         }
         @media (max-width: 768px) {
             #question-input {
@@ -427,9 +582,11 @@
             position: fixed;
             top: 15px;
             left: 15px;
-            background: transparent;
-            border: none;
-            color: var(--modal-border); /* 使用标题颜色以保持一致 */
+            --btn-bg: color-mix(in srgb, var(--container-bg) 65%, transparent);
+            --btn-bg-hover: color-mix(in srgb, var(--container-bg) 85%, transparent);
+            background: var(--btn-bg); /* 简化为纯底色，移除高光边线 */
+            border: none; /* 移除边框 */
+            color: var(--primary-text);
             font-family: inherit;
             font-size: 1rem;
             font-weight: bold;
@@ -442,19 +599,21 @@
             justify-content: center;
             gap: 8px;
             transform-origin: left center;
-            box-shadow: none;
-            transform: none;
-            transition: color 0.3s ease;
+            border-radius: 999px;
+            box-shadow: none; /* 移除可见阴影，变得更扁平 */
+            transform: translateY(0);
+            transition: transform 0.18s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
 
         #history-button:hover, #history-button:active, #history-button:focus, #history-button.active {
-            background: transparent;
-            border: none;
-            outline: none;
-            box-shadow: none;
-            opacity: 1;
-            transform: none;
             color: var(--title-color);
+            background: var(--btn-bg-hover);
+            /* 小幅提升，但不使用显著边线或发光 */
+            box-shadow: 0 6px 16px rgba(0,0,0,0.10);
+            transform: translateY(-1px);
+            outline: none;
         }
 
         /* 清除按钮样式 */
@@ -462,16 +621,10 @@
             display: block;
             margin: 15px auto;
             padding: 8px 16px;
-            background-color: #c93756;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background-color 0.3s ease;
-        }
-        .clear-history-button:hover {
-            background-color: #e04a69;
+            --btn-bg: #c93756;
+            --btn-bg-hover: #e04a69;
+            font-size: 0.95rem;
+            border-radius: 999px;
         }
         
         #history-modal-overlay {
@@ -581,15 +734,31 @@
             opacity: 0.7;
         }
         .modal-tab {
-            background: transparent; border: 2px solid transparent; color: var(--primary-text);
-            opacity: 0.6; padding: 8px 10px; font-size: 0.8em; border-radius: 6px;
-            cursor: pointer; transition: opacity 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-        }
-        .modal-tab.active { opacity: 1; color: var(--title-color); border-bottom-color: var(--title-color); }
-        .modal-tab:hover:not(.active) {
-            background-color: transparent !important;
+            --btn-bg: color-mix(in srgb, var(--container-bg) 55%, transparent);
+            --btn-bg-hover: color-mix(in srgb, var(--container-bg) 75%, transparent);
+            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.16)), var(--btn-bg);
+            border: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
             color: var(--primary-text);
-            opacity: 0.8;
+            opacity: 0.78;
+            padding: 8px 12px;
+            font-size: 0.85em;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: opacity 0.22s ease, color 0.22s ease, border-color 0.22s ease, background 0.22s ease, transform 0.18s ease;
+            box-shadow: none;
+        }
+        .modal-tab.active {
+            opacity: 1;
+            color: var(--title-color);
+            border-color: color-mix(in srgb, var(--title-color) 55%, var(--border-color));
+            background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0.12)), color-mix(in srgb, var(--container-bg) 85%, transparent);
+            transform: translateY(-1px);
+        }
+        .modal-tab:hover:not(.active) {
+            background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0.14)), var(--btn-bg-hover) !important;
+            color: var(--primary-text);
+            opacity: 0.92;
+            transform: translateY(-1px);
         }
         #modal-close-btn { background: none; border: none; color: var(--primary-text); font-size: 1.5em; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; padding: 0; line-height: 1; }
         #modal-close-btn:hover { opacity: 1; }
@@ -604,7 +773,7 @@
         @media (max-width: 768px) {
             body { align-items: center; padding: 0; }
             .container { padding: 15px; margin: 0 2.5%; width: 95%; border-radius: 8px; overflow: auto; }
-            h1 { font-size: 1.5em; }
+            h1 { font-size: 2.5em; }
             .hexagram-display { flex-direction: row; justify-content: space-around; align-items: flex-start; padding: 10px 5px; }
             .hexagram { flex: 1; min-width: 0; padding: 0 5px; }
             .hexagram h3 { font-size: 1em; margin-bottom: 6px; }
@@ -615,7 +784,7 @@
             #yao-stats-container { padding: 8px; gap: 5px; }
             .change-stat { font-size: 0.7em; padding: 4px 6px; }
             .yao-stats-result { font-size: 1em; }
-            button { font-size: 1em; padding: 10px 18px; }
+            button { font-size: 1em; padding: 10px 18px; border-radius: 12px; }
         }
     </style>
 </head>

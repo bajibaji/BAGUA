@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>諸葛神數 v1.0</title>
+    <meta name="description" content="诸葛神数v1.0">
     
     <!-- 引入 GSAP 动画库 (保持原版) -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
@@ -65,9 +66,9 @@
 
         /* 浅色模式变量 */
         html.light-theme {
-            --glass-bg: rgba(255, 255, 255, 0.35);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --glass-shadow: 0 8px 32px rgba(100, 116, 139, 0.3);
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(0, 0, 0, 0.2);
+            --glass-shadow: 0 8px 32px rgba(100, 116, 139, 0.15);
         }
 
         body {
@@ -144,7 +145,7 @@
             transition: all 0.3s ease;
             caret-color: var(--title-color);
         }
-        html.light-theme .char-input-main { background: rgba(255,255,255,0.3); color: #2d3748; }
+        html.light-theme .char-input-main { background: rgba(255,255,255,0.6); color: #2d3748; }
         
         .char-input-main:focus {
             outline: none;
@@ -152,7 +153,7 @@
             box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
             background: rgba(0,0,0,0.25);
         }
-        html.light-theme .char-input-main:focus { background: rgba(255,255,255,0.5); }
+        html.light-theme .char-input-main:focus { background: rgba(255,255,255,0.85); }
 
         /* 按钮基础样式重写 (保留进度条功能性CSS) */
         button#calculate-button, button#toggle-explanation-button {
@@ -257,6 +258,10 @@
         .qian-shi-text { color: var(--title-color); }
         html.light-theme .qian-shi-text { color: #8B4513; } /* 加深为SaddleBrown */
 
+        html.light-theme .text-gold-gradient {
+            text-shadow: 0 2px 10px rgba(212, 175, 55, 0.4), 0 0 25px rgba(255, 215, 0, 0.2);
+        }
+
         /* 响应式调整 */
         @media (max-width: 480px) {
             .char-input-main { font-size: 2em; height: 70px; }
@@ -275,10 +280,10 @@
     <div class="noise-overlay"></div>
 
     <!-- 背景八卦 SVG (保持原 SVG 代码) -->
-    <div id="background-bagua">
+    <div id="background-bagua" aria-hidden="true">
        <svg 
             viewBox="0 0 100 100" 
-            className="w-[180%] h-[180%] animate-spin-slow"
+            class="w-[180%] h-[180%] animate-spin-slow"
             fill="none" 
             stroke="currentColor"
         >
@@ -319,7 +324,7 @@
 
     <!-- 顶部控制栏 (主题切换) -->
     <header class="fixed top-0 right-0 p-6 z-40">
-        <button id="btn-theme" class="w-10 h-10 rounded-full border border-white/10 bg-black/20 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-gold-500 hover:border-gold-500/30 transition-all duration-300">
+        <button id="btn-theme" class="w-10 h-10 rounded-full border border-white/10 bg-black/20 backdrop-blur-md flex items-center justify-center text-gray-400 hover:text-gold-500 hover:border-gold-500/30 transition-all duration-300" aria-label="切换主题">
             <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
             <svg id="icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
         </button>
@@ -332,10 +337,10 @@
             
             <!-- 标题区 -->
             <div class="mb-10">
-                <h1 class="text-4xl sm:text-5xl font-bold tracking-[0.1em] mb-4 text-gold-gradient inline-block relative pb-1">
+                <h1 class="text-4xl sm:text-6xl font-bold tracking-[0.1em] mb-4 text-gold-gradient inline-block relative pb-1">
                     諸葛神數
                 </h1>
-                <p class="text-gray-400 font-light tracking-widest text-sm sm:text-base opacity-80 mt-2">
+                <p class="text-gray-400 font-light tracking-widest text-sm sm:text-base opacity-80">
                     请输入任意三个汉字，系统将为您推演命运之数。
                 </p>
                 <div class="w-20 h-[1px] bg-gradient-to-r from-transparent via-gold-500/50 to-transparent mx-auto mt-6"></div>
@@ -343,7 +348,7 @@
 
             <!-- 输入区 -->
             <div class="input-grid mb-8 flex justify-center">
-                <input type="text" id="char-input-main" class="char-input-main w-full max-w-md h-20 text-3xl sm:text-4xl rounded-2xl px-6 placeholder-gray-500/50" placeholder="在此输入三个汉字">
+                <input type="text" id="char-input-main" class="char-input-main w-full max-w-md h-20 text-3xl sm:text-4xl rounded-2xl px-6 placeholder-gray-500/50" placeholder="在此输入三个汉字" aria-label="请输入三个汉字">
             </div>
             
             <!-- 错误信息 -->
@@ -358,7 +363,7 @@
             </div>
 
             <!-- 结果显示区域 -->
-            <div id="result-container" class="mt-12 p-6 sm:p-8 text-left leading-relaxed text-lg backdrop-blur-xl">
+            <div id="result-container" class="mt-12 p-6 sm:p-8 text-left leading-relaxed text-lg backdrop-blur-xl" aria-live="polite">
                 <div id="result-details" class="space-y-6">
                     <!-- JS 将在此处动态插入结果内容 -->
                 </div>
@@ -637,14 +642,14 @@
                 // 更新了这里的HTML结构以匹配新风格 (Tailwind classes)
                 finalResultHTML = `
                     <div class="qian-shi-title text-xl opacity-80 mb-2">第 ${finalResult} 籤</div>
-                    <div class="qian-shi-text text-2xl md:text-3xl font-bold leading-relaxed mb-8 whitespace-pre-wrap">${qianData.yeah}</div>
+                    <div class="qian-shi-text text-2xl md:text-3xl font-bold leading-loose mb-8 whitespace-pre-wrap">${qianData.yeah}</div>
                     <div class="text-center">
                         <button id="toggle-explanation-button" class="explanation-button px-8 py-3 rounded-xl text-lg shadow-md" data-expanded="false">解 籤</button>
                     </div>
                     <div class="jie-qian-container mt-8 pt-6 border-t border-white/10 text-left opacity-90 overflow-hidden" style="display:none; height:0; opacity:0;">
                         <div class="jie-qian-title text-lg font-bold text-gold-500 mb-4 text-center">【解籤】</div>
-                        <p class="jie-qian-text mb-4 leading-loose"><strong class="text-gray-200 dark:text-gray-300">解籤一：</strong> ${qianData.shit1}</p>
-                        <p class="jie-qian-text leading-loose"><strong class="text-gray-200 dark:text-gray-300">解籤二：</strong> ${qianData.shit2}</p>
+                        <p class="jie-qian-text mb-4 leading-loose"><strong class="text-gray-700 dark:text-gray-300">解籤一：</strong> ${qianData.shit1}</p>
+                        <p class="jie-qian-text mb-4 leading-loose"><strong class="text-gray-700 dark:text-gray-300">解籤二：</strong> ${qianData.shit2}</p>
                     </div>
                 `;
             }
