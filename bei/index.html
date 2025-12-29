@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>数字杯筊 - 终极拟真物理模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: radial-gradient(circle at 20% 20%, #1c2a48 0%, #050910 65%); touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #e2e8f0; }
+        canvas { display: block; }
+        .glass-panel {
+            background: rgba(16, 24, 46, 0.78);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 30px 80px -24px rgba(2, 6, 23, 0.85);
+        }
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 20px rgba(220, 38, 38, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(220, 38, 38, 0.5); }
+        }
+        .btn-active { animation: pulse-red 2s infinite; }
+    </style>
+</head>
+<body>
+
+    <!-- UI Overlay -->
+    <div id="ui-root" class="fixed inset-0 pointer-events-none flex flex-col items-center justify-between p-8 z-50">
+        <header class="text-center pt-4">
+            <h1 class="text-4xl font-black text-red-700 tracking-tighter drop-shadow-2xl italic">神谕·圣筊</h1>
+            <p id="sub-status" class="text-slate-300 text-[10px] uppercase tracking-[0.4em] mt-2 font-mono">Precision Asymmetric Dynamics V7.1</p>
+        </header>
+
+        <!-- 结果提示 -->
+        <div id="result-display" class="hidden glass-panel p-12 rounded-[4rem] text-center scale-90 opacity-0 transition-all duration-700">
+            <h2 id="result-title" class="text-7xl font-black text-yellow-500 mb-4 drop-shadow-lg">圣筊</h2>
+            <p id="result-desc" class="text-white text-lg opacity-80 font-serif">一平一凸：神明应允，诸事亨通</p>
+            <button onclick="app.reset()" class="mt-10 pointer-events-auto bg-gradient-to-b from-red-600 to-red-900 text-white px-16 py-4 rounded-full font-bold hover:from-red-500 hover:to-red-800 transition-all shadow-2xl active:scale-95 border border-white/10 tracking-[0.2em] text-sm">
+                诚心重请
+            </button>
+        </div>
+
+        <!-- 底部控制 -->
+        <div class="w-full flex flex-col items-center gap-6 pb-4">
+            <div id="instruction" class="text-white/70 text-xs tracking-widest font-light">
+                <span class="md:hidden">拿起手机 · 诚心祈愿 · 释放掷出</span>
+                <span class="hidden md:inline">桌面端：点击按钮模拟掷出</span>
+            </div>
+            <button id="main-btn" class="pointer-events-auto bg-red-800 hover:bg-red-700 text-white w-28 h-28 rounded-full border-4 border-white/10 flex items-center justify-center transition-all active:scale-90 relative btn-active">
+                <div id="btn-progress" class="absolute inset-0 rounded-full border-4 border-yellow-500 opacity-0 transition-opacity"></div>
+                <span id="btn-icon" class="text-4xl relative z-10">🙏</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 权限提示层 -->
+    <div id="permission-modal" class="fixed inset-0 bg-gradient-to-br from-black/90 via-slate-900/80 to-slate-800/70 z-[60] flex items-center justify-center p-6 text-center">
+        <div class="max-w-xs">
+            <div class="mb-8 text-7xl drop-shadow-2xl">🏮</div>
+            <h3 class="text-3xl font-bold text-white mb-6 tracking-tight">感应仪式</h3>
+            <p class="text-slate-400 mb-12 text-sm leading-relaxed font-light">我们将同步您的加速度计与陀螺仪数据。请点击下方按钮开启拟真感应。</p>
+            <button onclick="app.initSensors()" class="w-full bg-red-700 text-white py-5 rounded-2xl font-bold shadow-2xl active:scale-95 transition-transform border border-red-500/20 tracking-[0.2em]">开启感应</button>
+            <button onclick="app.skipSensors()" class="w-full mt-4 text-slate-600 text-xs underline">手动模式(桌面端)</button>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/+esm"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import * as CANNON from 'cannon-es';
+
+        class BwaBweiApp {
+            constructor() {
+                this.status = 'idle';
+                this.sensorData = { accel: {x:0, y:0, z:0}, gyro: {x:0, y:0, z:0} };
+                this.hasSensor = false;
+                this.initGraphics();
+                this.initPhysics();
+                this.createScene();
+                this.animate();
+                
+                window.app = this;
+                const btn = document.getElementById('main-btn');
+                btn.addEventListener('pointerdown', () => this.handleAction());
+            }
+
+            initGraphics() {
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x0f1829);
+                this.scene.fog = new THREE.Fog(0x0f1829, 40, 160);
+
+                this.camera = new THREE.PerspectiveCamera(24, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.set(0, 45, 55);
+                this.camera.lookAt(0, 0, 0);
+
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+                this.renderer.setPixelRatio(window.devicePixelRatio);
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                document.body.appendChild(this.renderer.domElement);
+
+                const ambient = new THREE.AmbientLight(0xfdfdfd, 0.35);
+                this.scene.add(ambient);
+
+                const hemiLight = new THREE.HemisphereLight(0xcfe4ff, 0x0a101d, 0.6); // Soft fill to lift shadowed faces
+                this.scene.add(hemiLight);
+                
+                const mainLight = new THREE.SpotLight(0xfff7d4, 2.2);
+                mainLight.position.set(20, 60, 40);
+                mainLight.angle = Math.PI / 10;
+                mainLight.penumbra = 0.8;
+                mainLight.castShadow = true;
+                mainLight.shadow.mapSize.set(2048, 2048);
+                this.scene.add(mainLight);
+
+                const backlight = new THREE.PointLight(0xff4d4d, 1.3, 140);
+                backlight.position.set(-30, 10, -20);
+                this.scene.add(backlight);
+            }
+
+            initPhysics() {
+                this.world = new CANNON.World();
+                this.world.gravity.set(0, -120, 0); 
+                this.world.allowSleep = true;
+                this.world.solver.iterations = 30;
+
+                this.physicsMaterial = new CANNON.Material('bwaMaterial');
+                const groundMaterial = new CANNON.Material('groundMaterial');
+
+                this.world.addContactMaterial(new CANNON.ContactMaterial(this.physicsMaterial, groundMaterial, {
+                    friction: 0.8,
+                    restitution: 0.05,
+                    contactEquationStiffness: 1e9,
+                    contactEquationRelaxation: 4
+                }));
+
+                const groundBody = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), material: groundMaterial });
+                groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+                this.world.addBody(groundBody);
+            }
+
+            createScene() {
+                const groundGeo = new THREE.PlaneGeometry(600, 600);
+                const groundMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x111a2a, 
+                    roughness: 0.7,
+                    metalness: 0.2
+                });
+                const ground = new THREE.Mesh(groundGeo, groundMat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.receiveShadow = true;
+                this.scene.add(ground);
+
+                const grid = new THREE.GridHelper(150, 40, 0x2c3f62, 0x121a26);
+                grid.position.y = 0.01;
+                this.scene.add(grid);
+
+                this.blocks = [];
+                for (let i = 0; i < 2; i++) {
+                    const block = this.createHyperRealisticBwaBwei(i);
+                    this.blocks.push(block);
+                    this.scene.add(block.mesh);
+                    this.world.addBody(block.body);
+                }
+            }
+
+            createHyperRealisticBwaBwei(index) {
+                const length = 4.2;
+                const width = 1.6;
+                const height = 1.8;
+
+                const shape = new THREE.Shape();
+                shape.moveTo(length, 0);
+                shape.bezierCurveTo(length, width * 3, -length, width * 3, -length, 0);
+                shape.bezierCurveTo(-length, width * 0.6, length, width * 0.6, length, 0);
+
+                const geometry = new THREE.ExtrudeGeometry(shape, {
+                    depth: 0.2,
+                    bevelEnabled: true,
+                    bevelThickness: 0.5,
+                    bevelSize: 0.1,
+                    bevelSegments: 16
+                });
+                geometry.center();
+
+                const posAttr = geometry.attributes.position;
+                const vertex = new THREE.Vector3();
+                
+                for (let i = 0; i < posAttr.count; i++) {
+                    vertex.fromBufferAttribute(posAttr, i);
+                    
+                    if (vertex.z < 0) {
+                        vertex.z = -0.4;
+                    } else {
+                        // 修复 NaN: 确保 normalizedX 不超过 1.0，Math.sqrt 内的值不为负
+                        const normalizedX = Math.min(1.0, Math.abs(vertex.x) / length);
+                        const midY = width * 1.8; 
+                        const normalizedY = (vertex.y - midY) / width;
+                        
+                        const sqrtVal = Math.max(0, 1 - Math.pow(normalizedX, 2));
+                        const falloffX = Math.sqrt(sqrtVal);
+                        const falloffY = Math.max(0, 1 - Math.pow(normalizedY * 1.3, 2));
+                        
+                        vertex.z = 0.2 + (falloffX * falloffY * height);
+                    }
+                    posAttr.setXYZ(i, vertex.x, vertex.y, vertex.z);
+                }
+                
+                geometry.computeVertexNormals();
+                geometry.rotateX(Math.PI / 2);
+
+                const redLacquer = new THREE.MeshStandardMaterial({ 
+                    color: 0x800000, 
+                    roughness: 0.4, 
+                    metalness: 0.05 
+                });
+                const woodGrain = new THREE.MeshStandardMaterial({ 
+                    color: 0xc49b66, 
+                    roughness: 0.8 
+                });
+                
+                const mesh = new THREE.Mesh(geometry, [redLacquer, woodGrain]);
+                mesh.castShadow = true;
+
+                const body = new CANNON.Body({
+                    mass: 5.0,
+                    material: this.physicsMaterial,
+                    linearDamping: 0.3,
+                    angularDamping: 0.45,
+                    position: new CANNON.Vec3(index === 0 ? -6 : 6, 4, 0),
+                    allowSleep: true,
+                    sleepSpeedLimit: 0.4,
+                    sleepTimeLimit: 0.5
+                });
+
+                body.addShape(new CANNON.Box(new CANNON.Vec3(1.8, 0.2, 1.4)));
+                body.addShape(new CANNON.Box(new CANNON.Vec3(1.2, 0.8, 1.0)), new CANNON.Vec3(0, 0.6, 0.2));
+                
+                body.shapeOffsets.forEach(offset => offset.y += 0.6);
+
+                return { body, mesh };
+            }
+
+            async initSensors() {
+                try {
+                    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                        const permission = await DeviceMotionEvent.requestPermission();
+                        if (permission !== 'granted') throw new Error('Denied');
+                    }
+                    window.addEventListener('devicemotion', (e) => {
+                        this.sensorData.accel = e.acceleration || {x:0,y:0,z:0};
+                        this.sensorData.gyro = e.rotationRate || {x:0,y:0,z:0};
+                        this.hasSensor = true;
+                    });
+                    document.getElementById('permission-modal').classList.add('hidden');
+                    this.status = 'ready';
+                } catch (err) {
+                    this.skipSensors();
+                }
+            }
+
+            skipSensors() {
+                this.hasSensor = false;
+                document.getElementById('permission-modal').classList.add('hidden');
+                this.status = 'ready';
+            }
+
+            handleAction() {
+                if (this.status !== 'ready') return;
+                this.status = 'recording';
+                document.getElementById('instruction').innerText = '释放即掷出 · 诚心请示';
+                document.getElementById('main-btn').classList.add('scale-125');
+                document.getElementById('btn-progress').style.opacity = '1';
+                
+                const onRelease = () => {
+                    window.removeEventListener('pointerup', onRelease);
+                    this.throw();
+                };
+                window.addEventListener('pointerup', onRelease);
+            }
+
+            throw() {
+                this.status = 'flying';
+                const btn = document.getElementById('main-btn');
+                btn.classList.remove('scale-125', 'btn-active');
+                btn.classList.add('opacity-0');
+                document.getElementById('instruction').innerText = '落地有声...';
+
+                const { accel, gyro } = this.sensorData;
+
+                this.blocks.forEach((b, i) => {
+                    let impX, impY, impZ, rot;
+
+                    if (this.hasSensor) {
+                        impX = accel.x * 0.8;
+                        impY = Math.min(Math.abs(accel.y + accel.z) * 4 + 25, 60);
+                        impZ = -25 - Math.random() * 20;
+                        rot = {
+                            x: (gyro.alpha || 0) * 0.3 + (Math.random() - 0.5) * 80,
+                            y: (gyro.beta || 0) * 0.3 + (Math.random() - 0.5) * 80,
+                            z: (gyro.gamma || 0) * 0.3 + (Math.random() - 0.5) * 80
+                        };
+                    } else {
+                        impX = (Math.random() - 0.5) * 15;
+                        impY = 35 + Math.random() * 20;
+                        impZ = -30 - Math.random() * 10;
+                        rot = {
+                            x: (Math.random() - 0.5) * 150,
+                            y: (Math.random() - 0.5) * 150,
+                            z: (Math.random() - 0.5) * 150
+                        };
+                    }
+
+                    b.body.position.set(i === 0 ? -3 : 3, 5, 25); 
+                    b.body.velocity.set(impX, impY, impZ);
+                    b.body.angularVelocity.set(rot.x, rot.y, rot.z);
+                    b.body.wakeUp();
+                });
+            }
+
+            checkSettled() {
+                if (this.status !== 'flying') return;
+                const isSettled = this.blocks.every(b => 
+                    b.body.sleepState === CANNON.Body.SLEEPING || 
+                    (b.body.velocity.length() < 0.2 && b.body.angularVelocity.length() < 0.2)
+                );
+
+                if (isSettled) {
+                    this.status = 'settled';
+                    this.calculateResult();
+                }
+            }
+
+            calculateResult() {
+                const results = this.blocks.map(b => {
+                    const localPlaneNormal = new CANNON.Vec3(0, -1, 0);
+                    const worldNormal = b.body.quaternion.vmult(localPlaneNormal);
+                    return worldNormal.y > 0 ? '阳 (Open)' : '阴 (Closed)'; 
+                });
+
+                const resDisplay = document.getElementById('result-display');
+                resDisplay.classList.remove('hidden');
+                setTimeout(() => resDisplay.classList.add('scale-100', 'opacity-100'), 50);
+
+                const [b1, b2] = results;
+                const title = document.getElementById('result-title');
+                const desc = document.getElementById('result-desc');
+
+                if (b1 !== b2) {
+                    title.innerText = "圣筊";
+                    title.className = "text-7xl font-black text-green-500 mb-4 drop-shadow-2xl italic";
+                    desc.innerText = "一平一凸：神明应允，大吉大利。";
+                } else if (b1.includes('阳')) {
+                    title.innerText = "笑筊";
+                    title.className = "text-7xl font-black text-yellow-500 mb-4 drop-shadow-2xl italic";
+                    desc.innerText = "两平向上：神明笑而不语，请再诚心祈求。";
+                } else {
+                    title.innerText = "阴筊";
+                    title.className = "text-7xl font-black text-red-600 mb-4 drop-shadow-2xl italic";
+                    desc.innerText = "两凸向上：神明不允，凡事宜守。";
+                }
+            }
+
+            reset() {
+                document.getElementById('result-display').classList.add('hidden', 'scale-90', 'opacity-0');
+                const btn = document.getElementById('main-btn');
+                btn.classList.remove('opacity-0');
+                btn.classList.add('btn-active');
+                document.getElementById('instruction').innerText = '拿起手机 · 诚心祈愿';
+                this.blocks.forEach((b, i) => {
+                    b.body.position.set(i === 0 ? -6 : 6, 4, 0);
+                    b.body.velocity.set(0, 0, 0);
+                    b.body.angularVelocity.set(0, 0, 0);
+                    b.body.quaternion.set(0, 0, 0, 1);
+                });
+                this.status = 'ready';
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                this.world.fixedStep();
+                this.blocks.forEach(b => {
+                    b.mesh.position.copy(b.body.position);
+                    b.mesh.quaternion.copy(b.body.quaternion);
+                });
+                this.checkSettled();
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        window.addEventListener('load', () => new BwaBweiApp());
+    </script>
+</body>
+</html>
