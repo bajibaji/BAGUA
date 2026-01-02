@@ -149,7 +149,19 @@
             letter-spacing: 0.05em;
         }
 
-        #draw-button:hover:not(:disabled), #direct-submit-button:hover:not(:disabled) { 
+        /* 选签界面的重新打乱按钮 - 继承风格但尺寸更小 */
+        #reshuffle-button {
+            background-color: rgba(212, 175, 55, 0.15);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: var(--title-color);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            font-size: 0.9em;
+            padding: 8px 20px;
+            letter-spacing: 0.05em;
+        }
+
+        #draw-button:hover:not(:disabled), #direct-submit-button:hover:not(:disabled), #reshuffle-button:hover:not(:disabled) { 
             transform: translateY(-3px);
             box-shadow: 0 8px 28px rgba(212, 175, 55, 0.35);
             background-color: rgba(212, 175, 55, 0.28);
@@ -157,21 +169,23 @@
             border-color: var(--title-color);
         }
 
-        #draw-button:active:not(:disabled), #direct-submit-button:active:not(:disabled) { 
+        #draw-button:active:not(:disabled), #direct-submit-button:active:not(:disabled), #reshuffle-button:active:not(:disabled) { 
             transform: translateY(-1px); 
             box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25); 
         }
 
         /* 浅色主题按钮调整 */
         :root.light-theme #draw-button,
-        :root.light-theme #direct-submit-button {
+        :root.light-theme #direct-submit-button,
+        :root.light-theme #reshuffle-button {
             background-color: rgba(212, 175, 55, 0.22);
             border-color: rgba(212, 175, 55, 0.45);
             color: #6a531b;
         }
 
         :root.light-theme #draw-button:hover:not(:disabled),
-        :root.light-theme #direct-submit-button:hover:not(:disabled) {
+        :root.light-theme #direct-submit-button:hover:not(:disabled),
+        :root.light-theme #reshuffle-button:hover:not(:disabled) {
             background-color: var(--title-color);
             color: #fff;
         }
@@ -528,8 +542,9 @@
         /* --- [DELETED] 移除旧的 .direct-input-wrapper 和 #direct-input 样式 --- */
 
         .button-small {
-            font-size: 1.1em;
-            padding: 8px 20px;
+            font-size: 0.9em; /* 进一步缩小字体 */
+            padding: 6px 16px; /* 减小内边距 */
+            border-radius: 8px; /* 稍微减小圆角 */
         }
 
         /* --- [NEW] 摇签和选签界面 --- */
@@ -538,16 +553,19 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
+            height: 100dvh;
             background-color: var(--bg-color);
-            z-index: 101; /* 仅次于弹窗 */
+            z-index: 101;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: center; /* 默认垂直居中 */
             align-items: center;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.5s ease, visibility 0.5s ease;
+            box-sizing: border-box;
+            padding: env(safe-area-inset-top) 10px env(safe-area-inset-bottom) 10px;
+            overflow-y: auto; /* 允许覆盖层本身滚动 */
         }
         .fullscreen-overlay.visible {
             opacity: 1;
@@ -607,24 +625,26 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             box-sizing: border-box;
-            padding: 20px;
+            padding: 40px 10px; /* 增加上下边距 */
             width: 100%;
             max-width: 100%;
+            min-height: 100%; /* 确保高度撑满以实现居中 */
         }
         #selection-prompt {
             font-size: 1.3em;
             color: var(--primary-text);
             opacity: 0.8;
-            margin: 15px auto;
+            margin: 10px auto;
             flex-shrink: 0;
             text-align: center;
             line-height: 1.4;
-            width: fit-content;
-            max-width: calc(7 * 80px + 6 * 8px + 20px);
+            width: 100%; /* 改为 100% 确保水平居中有效 */
+            box-sizing: border-box;
             white-space: normal;
-            padding: 0 10px;
+            padding: 0 15px;
         }
         #card-grid {
             display: grid;
@@ -686,7 +706,7 @@
             /* [DELETED] */
             /* .direct-input-wrapper { flex-direction: column; width: 80%; } */
             /* #direct-input { width: 100%; box-sizing: border-box; } */
-            .button-small { font-size: 1em; }
+            .button-small { font-size: 0.85em; padding: 6px 14px; }
             #card-grid {
                 /* grid-template-columns: repeat(auto-fit, minmax(55px, 1fr)); */ /* [DELETED] (R3: 7x7 Grid) */
                 gap: 2px; /* [MODIFIED] (R3: 调至最紧凑) */
@@ -699,13 +719,11 @@
                 border-radius: 4px; 
             }
             #selection-prompt { 
-                font-size: 1.0em; 
+                font-size: 1.05em; 
                 line-height: 1.6;
-                margin: 8px auto;
-                max-width: 95vw;
-                width: 95vw;
-                padding: 0 10px;
-                white-space: normal;
+                margin: 1px auto;
+                width: 100%;
+                padding: 0 15px;
             }
         }
     </style>
@@ -826,6 +844,10 @@
     <!-- [NEW] 选签容器 -->
     <div id="selection-container" class="fullscreen-overlay">
         <div id="selection-prompt">凭直觉选一张灵签</div>
+        <!-- [NEW] 重新洗牌按钮 -->
+        <div class="button-wrapper" style="margin-bottom: 20px; min-height: auto;">
+            <button id="reshuffle-button" class="button-small">重新打乱排序</button>
+        </div>
         <div id="card-grid">
             <!-- 49张卡片将由JS生成 -->
         </div>
@@ -869,6 +891,7 @@
             deckVisual: document.getElementById('deck-visual'),
             stopShuffleButton: document.getElementById('stop-shuffle-button'),
             selectionContainer: document.getElementById('selection-container'),
+            reshuffleButton: document.getElementById('reshuffle-button'),
             cardGrid: document.getElementById('card-grid'),
 
             // 结果弹窗
@@ -1153,12 +1176,36 @@
             
             grid.appendChild(fragment);
 
+            // 恢复网格点击
+            grid.style.pointerEvents = 'auto';
+
             // 卡片入场动画
             gsap.from(grid.children, { 
                 opacity: 0, 
                 duration: 0.5, 
                 stagger: 0.02, 
                 ease: 'back.out(1.7)'
+            });
+        },
+
+        // [NEW] 重新打乱排序
+        reshuffle: function() {
+            this.addGlowEffect(this.elements.reshuffleButton);
+            
+            // 再次 Fisher–Yates 洗牌
+            if (this.state.lotteryDeck && this.state.lotteryDeck.length > 1) {
+                this.fisherYatesShuffle(this.state.lotteryDeck);
+            }
+
+            // 先让旧卡片消失
+            gsap.to(this.elements.cardGrid.children, {
+                opacity: 0,
+                scale: 0.8,
+                duration: 0.3,
+                stagger: 0.005,
+                onComplete: () => {
+                    this.populateCardGrid();
+                }
             });
         },
 
@@ -1393,6 +1440,7 @@
             // 绑定方式二按钮
             this.elements.drawButton.addEventListener('click', () => this.startInteractiveProcess());
             this.elements.stopShuffleButton.addEventListener('click', () => this.stopShuffling());
+            this.elements.reshuffleButton.addEventListener('click', () => this.reshuffle());
 
             // 绑定弹窗关闭事件
             this.elements.modalCloseBtn.addEventListener('click', () => this.closeModal());

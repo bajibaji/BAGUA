@@ -1,7 +1,6 @@
-
 <p align="center">
-  <font color="gold" size="5">发心不正者,结果絮乱不可观</font><br>
-  <font color="gold" size="5">网页仅供参考，解卦请自行找人</font>
+  <font color="gold" size="4">发心不正者,结果絮乱不可观</font><br>
+  <font color="gold" size="4">网页仅供参考，解卦请自行找人</font>
 </p>
 
 <div align="center">
@@ -12,6 +11,9 @@
 
 ---
 
+## v0.2.4
+### 修改诸葛神数界面的按钮问题
+### 增加灵签的重新排序功能
 ## v0.2.3
 ### 修复 主页CSS 语法错误
 ### 主页无障碍支持
